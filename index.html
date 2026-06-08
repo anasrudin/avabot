@@ -1,0 +1,261 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>AVABOT &mdash; Next-Generation AI Orchestrator</title>
+  <meta name="description" content="Avabot is a next-generation AI orchestrator that partners with builders to design, deploy, and scale autonomous agents that drive real-world impact. Check your agent level today.">
+  
+  <!-- Preload Fonts -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@200;300;400;500;700&family=Space+Grotesk:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+  
+  <!-- CSS Stylesheet -->
+  <link rel="stylesheet" href="index.css">
+  
+  <!-- Three.js CDN -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+</head>
+<body>
+
+  <!-- Background Grid & Glow Effects -->
+  <div class="ambient-glow bg-glow-left"></div>
+  <div class="ambient-glow bg-glow-right"></div>
+  <div class="grid-overlay"></div>
+
+  <!-- Main Container -->
+  <div class="app-container">
+    
+    <!-- Header Navigation -->
+    <header class="main-header" id="nav-header">
+      <div class="logo-container">
+        <!-- SVG Logo: Futuristic clean geometric shape -->
+        <svg class="logo-icon" viewBox="0 0 100 100" fill="none" xmlns="http://www.w3.org/2000/svg">
+          <circle cx="50" cy="50" r="38" stroke="currentColor" stroke-width="1.5" stroke-dasharray="6 4"/>
+          <circle cx="50" cy="50" r="28" stroke="currentColor" stroke-width="1" />
+          <path d="M50 12 L50 88 M12 50 L88 50 M23.2 23.2 L76.8 76.8 M23.2 76.8 L76.8 23.2" stroke="currentColor" stroke-width="1" stroke-opacity="0.3"/>
+          <polygon points="50,42 58,50 50,58 42,50" fill="currentColor" class="logo-inner"/>
+          <circle cx="50" cy="50" r="3" fill="#ffffff" />
+        </svg>
+        <span class="logo-text">AVABOT</span>
+      </div>
+      
+      <nav class="nav-links">
+        <a href="#concept" class="nav-link">Concept</a>
+        <a href="#architecture" class="nav-link">Architecture</a>
+        <a href="#ecosystem" class="nav-link">Ecosystem</a>
+        <a href="#lab" class="nav-link">Lab</a>
+      </nav>
+      
+      <div class="header-actions">
+        <button class="launch-btn" id="launch-console-btn">Launch Console</button>
+      </div>
+    </header>
+
+    <!-- Main Hero Screen -->
+    <main class="hero-section">
+      
+      <!-- Central Robot Asset Area -->
+      <div class="centerpiece-wrapper" id="centerpiece-wrapper">
+        <div class="centerpiece-glow"></div>
+        <div id="canvas3d-container" class="canvas-3d-container"></div>
+      </div>
+
+      <!-- Bottom Panel (Left and Right Columns) -->
+      <div class="hero-bottom-panels">
+        
+        <!-- Left Panel: Brand Statement and Call to Action -->
+        <div class="bottom-left-panel">
+          <h1 class="branding-statement">
+            Avabot is a next-generation AI orchestrator that partners with builders to design, deploy, and scale autonomous agents that drive real-world impact.
+          </h1>
+          <button class="cta-button" id="open-diagnostic-btn">
+            <span>Check Your Agent Level</span>
+            <svg class="arrow-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <line x1="5" y1="12" x2="19" y2="12"></line>
+              <polyline points="12 5 19 12 12 19"></polyline>
+            </svg>
+          </button>
+        </div>
+
+        <!-- Right Panel: Supplementary Info -->
+        <div class="bottom-right-panel">
+          <p class="secondary-statement">
+            A new framework is emerging &mdash; we merge advanced agentic workflows, dynamic tools, and cognitive layers into a cohesive system. Built for the next epoch of autonomy.
+          </p>
+        </div>
+        
+      </div>
+      
+    </main>
+
+  </div>
+
+  <!-- Interactive Grading Modal -->
+  <div class="modal-backdrop" id="diagnostic-modal">
+    <div class="modal-container">
+      
+      <!-- Modal Close Button -->
+      <button class="modal-close-btn" id="close-modal-btn" aria-label="Close Diagnostic Window">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <line x1="18" y1="6" x2="6" y2="18"></line>
+          <line x1="6" y1="6" x2="18" y2="18"></line>
+        </svg>
+      </button>
+
+      <!-- Modal Header -->
+      <div class="modal-header">
+        <span class="modal-subtitle">COGNITIVE DIAGNOSTIC</span>
+        <h2 class="modal-title">Agentic Autonomy Index</h2>
+        <div class="progress-bar-container">
+          <div class="progress-bar" id="diagnostic-progress"></div>
+        </div>
+      </div>
+
+      <!-- Modal Content - Questionnaire -->
+      <div class="modal-body" id="quiz-step-container">
+        
+        <!-- Step 1 -->
+        <div class="quiz-step active" data-step="1">
+          <p class="question-text">How does your agent handle task planning and complex reasoning?</p>
+          <div class="options-grid">
+            <button class="option-card" data-score="1">
+              <span class="option-index">A</span>
+              <span class="option-label">Linear / Static Prompting</span>
+              <p class="option-desc">Executes instructions sequentially without deviation or self-reflection.</p>
+            </button>
+            <button class="option-card" data-score="3">
+              <span class="option-index">B</span>
+              <span class="option-label">Chain-of-Thought & Self-Correction</span>
+              <p class="option-desc">Breaks tasks into steps and reviews intermediate outputs to fix mistakes.</p>
+            </button>
+            <button class="option-card" data-score="5">
+              <span class="option-index">C</span>
+              <span class="option-label">Dynamic Graph Planning</span>
+              <p class="option-desc">Creates branching plans, invokes multiple sub-agents, and dynamically replans based on environmental feedback.</p>
+            </button>
+          </div>
+        </div>
+
+        <!-- Step 2 -->
+        <div class="quiz-step" data-step="2">
+          <p class="question-text">What architecture manages your agent's memory and context retention?</p>
+          <div class="options-grid">
+            <button class="option-card" data-score="1">
+              <span class="option-index">A</span>
+              <span class="option-label">Short-Term Session Cache</span>
+              <p class="option-desc">Memory is ephemeral, resetting at the end of each session or short window.</p>
+            </button>
+            <button class="option-card" data-score="3">
+              <span class="option-index">B</span>
+              <span class="option-label">Basic RAG with Vector Stores</span>
+              <p class="option-desc">Queries external vectors to retrieve documents, retaining limited historic conversation context.</p>
+            </button>
+            <button class="option-card" data-score="5">
+              <span class="option-index">C</span>
+              <span class="option-label">Dual-Core Semantic Knowledge Graph</span>
+              <p class="option-desc">Maintains long-term episodic graphs, vector indexes, and learns user preference profiles continuously.</p>
+            </button>
+          </div>
+        </div>
+
+        <!-- Step 3 -->
+        <div class="quiz-step" data-step="3">
+          <p class="question-text">How integrated is your agent with third-party tools, databases, and APIs?</p>
+          <div class="options-grid">
+            <button class="option-card" data-score="1">
+              <span class="option-index">A</span>
+              <span class="option-label">Read-Only / Closed Environment</span>
+              <p class="option-desc">Generates text output but cannot directly perform actions or write to external systems.</p>
+            </button>
+            <button class="option-card" data-score="3">
+              <span class="option-index">B</span>
+              <span class="option-label">Pre-configured API Tools</span>
+              <p class="option-desc">Triggers specific, hardcoded APIs (e.g. web search, database lookup) when prompted.</p>
+            </button>
+            <button class="option-card" data-score="5">
+              <span class="option-index">C</span>
+              <span class="option-label">Autonomous Tool Synthesis & Execution</span>
+              <p class="option-desc">Inspects undocumented APIs, writes its own code wrappers, and securely runs commands in sandboxed environments.</p>
+            </button>
+          </div>
+        </div>
+
+        <!-- Step 4 -->
+        <div class="quiz-step" data-step="4">
+          <p class="question-text">What level of human oversight is required for operational safety?</p>
+          <div class="options-grid">
+            <button class="option-card" data-score="1">
+              <span class="option-index">A</span>
+              <span class="option-label">Full Manual Gate (Human-in-the-Loop)</span>
+              <p class="option-desc">Requires human approval for every single action, decision, or output.</p>
+            </button>
+            <button class="option-card" data-score="3">
+              <span class="option-index">B</span>
+              <span class="option-label">Mixed-Initiative Guardrails</span>
+              <p class="option-desc">Runs autonomously for minor tasks, prompting humans only for critical decisions or high-cost transactions.</p>
+            </button>
+            <button class="option-card" data-score="5">
+              <span class="option-index">C</span>
+              <span class="option-label">Fully Autonomous with Self-Auditing</span>
+              <p class="option-desc">Runs continuously in background, resolving conflicts and auditing itself with automated failsafes.</p>
+            </button>
+          </div>
+        </div>
+
+      </div>
+
+      <!-- Modal Footer (For Navigation) -->
+      <div class="modal-footer">
+        <span class="step-counter" id="step-counter-text">Question 1 of 4</span>
+      </div>
+
+      <!-- Result Screen (Hidden by Default) -->
+      <div class="results-screen" id="results-screen">
+        <div class="score-circle-wrapper">
+          <svg class="radial-score-svg" viewBox="0 0 100 100">
+            <circle class="radial-track" cx="50" cy="50" r="45"></circle>
+            <circle class="radial-progress" id="score-ring" cx="50" cy="50" r="45" stroke-dasharray="282.7" stroke-dashoffset="282.7"></circle>
+          </svg>
+          <div class="score-display">
+            <span class="score-level-num" id="result-level-num">L4</span>
+            <span class="score-percent" id="result-score-percent">82%</span>
+          </div>
+        </div>
+        
+        <h3 class="result-tier-title" id="result-tier-title">Autonomous Architect</h3>
+        <p class="result-tier-desc" id="result-tier-desc">Your agent displays advanced cognitive planning and deep execution capabilities. You are well-positioned to leverage multi-agent frameworks.</p>
+
+        <div class="metric-breakdown">
+          <div class="metric-row">
+            <span class="metric-label">Planning & Reasoning</span>
+            <div class="metric-bar-container"><div class="metric-bar" id="bar-planning" style="width: 0%"></div></div>
+          </div>
+          <div class="metric-row">
+            <span class="metric-label">Episodic Memory</span>
+            <div class="metric-bar-container"><div class="metric-bar" id="bar-memory" style="width: 0%"></div></div>
+          </div>
+          <div class="metric-row">
+            <span class="metric-label">Tool Integration</span>
+            <div class="metric-bar-container"><div class="metric-bar" id="bar-tools" style="width: 0%"></div></div>
+          </div>
+          <div class="metric-row">
+            <span class="metric-label">Autonomy & Trust</span>
+            <div class="metric-bar-container"><div class="metric-bar" id="bar-autonomy" style="width: 0%"></div></div>
+          </div>
+        </div>
+
+        <div class="result-actions">
+          <button class="cta-button reset-btn" id="restart-diagnostic-btn">Retake Diagnostic</button>
+          <button class="launch-btn optimize-btn" id="diagnostic-optimize-btn">Deploy Avabot Core</button>
+        </div>
+      </div>
+
+    </div>
+  </div>
+
+  <!-- JavaScript Bundle -->
+  <script src="index.js"></script>
+</body>
+</html>
