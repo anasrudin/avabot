@@ -1,5 +1,5 @@
 document.addEventListener('DOMContentLoaded', () => {
-  // Selectors
+  // ==================== DIAGNOSTIC MODAL LOGIC ====================
   const modal = document.getElementById('diagnostic-modal');
   const openModalBtn = document.getElementById('open-diagnostic-btn');
   const closeModalBtn = document.getElementById('close-modal-btn');
@@ -23,18 +23,14 @@ document.addEventListener('DOMContentLoaded', () => {
   const barMemory = document.getElementById('bar-memory');
   const barTools = document.getElementById('bar-tools');
   const barAutonomy = document.getElementById('bar-autonomy');
-  
-  const centerpieceWrapper = document.getElementById('centerpiece-wrapper');
 
-  // Quiz State
   let currentStepIndex = 0;
   let scores = [0, 0, 0, 0];
 
-  // Modal Functionality
   function openModal() {
     modal.classList.add('open');
     resetQuiz();
-    document.body.style.overflow = 'hidden'; // Prevent scrolling underlying page
+    document.body.style.overflow = 'hidden';
   }
 
   function closeModal() {
@@ -45,33 +41,22 @@ document.addEventListener('DOMContentLoaded', () => {
   openModalBtn.addEventListener('click', openModal);
   closeModalBtn.addEventListener('click', closeModal);
   launchConsoleBtn.addEventListener('click', () => {
-    alert("Console initializing. Initiating connection with Avabot cluster...");
     openModal();
   });
   
-  // Close modal when clicking backdrop
   modal.addEventListener('click', (e) => {
-    if (e.target === modal) {
-      closeModal();
-    }
+    if (e.target === modal) closeModal();
   });
 
-  // Esc key closes modal
   document.addEventListener('keydown', (e) => {
-    if (e.key === 'Escape' && modal.classList.contains('open')) {
-      closeModal();
-    }
+    if (e.key === 'Escape' && modal.classList.contains('open')) closeModal();
   });
 
-  // Card options event delegation
   quizStepContainer.addEventListener('click', (e) => {
     const card = e.target.closest('.option-card');
     if (!card) return;
-
     const score = parseInt(card.getAttribute('data-score'), 10);
     scores[currentStepIndex] = score;
-
-    // Advanced to next step or show results
     if (currentStepIndex < steps.length - 1) {
       nextStep();
     } else {
@@ -80,81 +65,52 @@ document.addEventListener('DOMContentLoaded', () => {
   });
 
   function nextStep() {
-    // Hide current step
     steps[currentStepIndex].classList.remove('active');
-    
-    // Increment step index
     currentStepIndex++;
-    
-    // Show next step
     steps[currentStepIndex].classList.add('active');
-    
-    // Update progress bar
-    const progressPercent = ((currentStepIndex + 1) / steps.length) * 100;
-    progressBar.style.width = `${progressPercent}%`;
-    
-    // Update counter text
+    progressBar.style.width = `${((currentStepIndex + 1) / steps.length) * 100}%`;
     stepCounterText.textContent = `Question ${currentStepIndex + 1} of ${steps.length}`;
   }
 
   function showResults() {
-    // Hide quiz steps & headers
     quizStepContainer.style.display = 'none';
     progressBar.parentElement.style.display = 'none';
     stepCounterText.style.display = 'none';
     
-    // Calculate Score
     const totalScore = scores.reduce((sum, val) => sum + val, 0);
     const maxScore = steps.length * 5;
     const percentage = Math.round((totalScore / maxScore) * 100);
     
-    // Determine Tiers
-    let level = 'L1';
-    let title = '';
-    let desc = '';
-    
+    let level, title, desc;
     if (percentage <= 25) {
-      level = 'L1';
-      title = 'Prompt Apprentice';
+      level = 'L1'; title = 'Prompt Apprentice';
       desc = 'Your agent operates primarily on linear instructions and static prompts. It requires human oversight for every execution step.';
     } else if (percentage <= 50) {
-      level = 'L2';
-      title = 'Task Automator';
+      level = 'L2'; title = 'Task Automator';
       desc = 'Your agent successfully handles simple automated loops and session-based caching, performing pre-defined task workflows.';
     } else if (percentage <= 70) {
-      level = 'L3';
-      title = 'Workflow Orchestrator';
+      level = 'L3'; title = 'Workflow Orchestrator';
       desc = 'Your agent utilizes Chain-of-Thought planning and integrates with core tool APIs. It requires oversight only for high-risk decisions.';
     } else if (percentage <= 90) {
-      level = 'L4';
-      title = 'Cognitive Integrator';
+      level = 'L4'; title = 'Cognitive Integrator';
       desc = 'Your agent utilizes advanced self-reflection, stores episodic context in RAG vector layers, and automates high-complexity task sequences.';
     } else {
-      level = 'L5';
-      title = 'Autonomous Architect';
+      level = 'L5'; title = 'Autonomous Architect';
       desc = 'Congratulations! Your agent system operates fully autonomously, dynamic-planning across semantic networks, generating custom tools, and self-auditing.';
     }
 
-    // Set level text and score percentage
     resultLevelNum.textContent = level;
     resultScorePercent.textContent = `${percentage}%`;
     resultTierTitle.textContent = title;
     resultTierDesc.textContent = desc;
-
-    // Show result view
     resultsScreen.classList.add('active');
 
-    // Animate radial progress ring
     const radius = 45;
-    const circumference = 2 * Math.PI * radius; // 282.74
+    const circumference = 2 * Math.PI * radius;
     const offset = circumference - (percentage / 100) * circumference;
-    
-    // Force reflow for animation to trigger
     scoreRing.getBoundingClientRect();
     scoreRing.style.strokeDashoffset = offset;
 
-    // Animate metric bars
-    // Score is 1 to 5, mapping to 20% to 100%
     setTimeout(() => {
       barPlanning.style.width = `${scores[0] * 20}%`;
       barMemory.style.width = `${scores[1] * 20}%`;
@@ -166,27 +122,16 @@ document.addEventListener('DOMContentLoaded', () => {
   function resetQuiz() {
     currentStepIndex = 0;
     scores = [0, 0, 0, 0];
-    
-    // Reset layout displays
     quizStepContainer.style.display = 'flex';
     progressBar.parentElement.style.display = 'block';
     stepCounterText.style.display = 'block';
     resultsScreen.classList.remove('active');
-    
-    // Reset steps
     steps.forEach((step, idx) => {
-      if (idx === 0) {
-        step.classList.add('active');
-      } else {
-        step.classList.remove('active');
-      }
+      step.classList[idx === 0 ? 'add' : 'remove']('active');
     });
-
-    // Reset progress details
     progressBar.style.width = `${(1 / steps.length) * 100}%`;
     stepCounterText.textContent = `Question 1 of ${steps.length}`;
-    scoreRing.style.strokeDashoffset = 282.74; // Reset radial stroke
-    
+    scoreRing.style.strokeDashoffset = 282.74;
     barPlanning.style.width = '0%';
     barMemory.style.width = '0%';
     barTools.style.width = '0%';
@@ -195,302 +140,454 @@ document.addEventListener('DOMContentLoaded', () => {
 
   restartBtn.addEventListener('click', resetQuiz);
   optimizeBtn.addEventListener('click', () => {
-    alert("Deploying Avabot Cognitive Core upgrade. Connecting to your local runtime...");
     closeModal();
   });
 
-  // Three.js 3D Initialization
+  // ==================== THREE.JS 3D ROBOT ====================
   function init3D() {
     const container = document.getElementById('canvas3d-container');
-    if (!container) return;
-
-    if (typeof THREE === 'undefined') {
-      console.warn("Three.js not loaded. Fallback background will remain visible.");
+    if (!container) {
+      console.error('[Avabot3D] #canvas3d-container not found');
       return;
     }
 
+    if (typeof THREE === 'undefined') {
+      console.error('[Avabot3D] THREE is undefined - CDN failed to load');
+      return;
+    }
+
+    console.log('[Avabot3D] Initializing Three.js scene...');
+
     try {
+      // Get container dimensions with fallback
+      let w = container.clientWidth;
+      let h = container.clientHeight;
+      if (w === 0 || h === 0) {
+        w = Math.min(window.innerHeight * 0.8, 680);
+        h = w;
+        console.warn('[Avabot3D] Container had 0 dimensions, using fallback:', w, h);
+      }
+      console.log('[Avabot3D] Canvas dimensions:', w, 'x', h);
+
+      // Scene
       const scene = new THREE.Scene();
 
-      // Resolve size from container or viewport fallback if layout is not ready
-      let width = container.clientWidth;
-      let height = container.clientHeight;
-      if (width === 0 || height === 0) {
-        const estSize = Math.min(window.innerHeight * 0.8, 680);
-        width = estSize;
-        height = estSize;
-        console.log("Canvas container size was 0. Using computed layout fallback:", estSize);
-      }
-
       // Camera
-      const camera = new THREE.PerspectiveCamera(45, width / height, 0.1, 100);
-      camera.position.z = 7.5;
+      const camera = new THREE.PerspectiveCamera(40, w / h, 0.1, 100);
+      camera.position.set(0, 0, 9);
 
       // Renderer
       const renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true });
-      renderer.setSize(width, height);
+      renderer.setSize(w, h);
       renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
-      renderer.setClearColor(0x000000, 0); // Keep transparent for CSS fallback background
+      renderer.setClearColor(0x000000, 0);
+      renderer.toneMapping = THREE.LinearToneMapping;
+      renderer.toneMappingExposure = 1.0;
       container.appendChild(renderer.domElement);
+      console.log('[Avabot3D] Renderer created and appended');
 
-      // Main Robot Group
-      const robotGroup = new THREE.Group();
-      robotGroup.position.set(0, 1.2, 0); 
-      scene.add(robotGroup);
-
-      // Materials (optimized for non-envMap diffuse rendering + specularity)
-      const bodyMaterial = new THREE.MeshPhysicalMaterial({
-        color: 0x151515,
-        metalness: 0.65,
-        roughness: 0.16,
-        clearcoat: 1.0,
-        clearcoatRoughness: 0.08,
-        reflectivity: 0.8
-      });
-
-      const jointMaterial = new THREE.MeshStandardMaterial({
-        color: 0x2d2d2d,
-        metalness: 0.5,
-        roughness: 0.3
-      });
-
-      const glowMaterial = new THREE.MeshBasicMaterial({
-        color: 0x00f0ff
-      });
-
-      const visorMaterial = new THREE.MeshPhysicalMaterial({
-        color: 0x020202,
-        metalness: 0.2,
-        roughness: 0.02,
-        transparent: true,
-        opacity: 0.85,
-        transmission: 0.4,
-        ior: 1.5
-      });
-
-      // 1. Head
-      const headGeo = new THREE.SphereGeometry(1, 32, 32);
-      headGeo.scale(1, 1.28, 0.95);
-      const headMesh = new THREE.Mesh(headGeo, bodyMaterial);
-      robotGroup.add(headMesh);
-
-      // 2. Visor
-      const visorGeo = new THREE.SphereGeometry(0.88, 32, 32);
-      visorGeo.scale(1.02, 0.65, 0.8);
-      const visorMesh = new THREE.Mesh(visorGeo, visorMaterial);
-      visorMesh.position.set(0, 0.18, 0.38);
-      robotGroup.add(visorMesh);
-
-      // 3. LED Matrix Eyes (Grid)
-      const eyeGeo = new THREE.SphereGeometry(0.035, 8, 8);
-      const eyeGroup = new THREE.Group();
-      
-      const leftEyePos = [
-        {x: -0.3, y: 0.2, z: 0.78}, {x: -0.22, y: 0.2, z: 0.80}, {x: -0.14, y: 0.2, z: 0.81},
-        {x: -0.26, y: 0.25, z: 0.79}, {x: -0.18, y: 0.25, z: 0.80}
-      ];
-      const rightEyePos = [
-        {x: 0.14, y: 0.2, z: 0.81}, {x: 0.22, y: 0.2, z: 0.80}, {x: 0.3, y: 0.2, z: 0.78},
-        {x: 0.18, y: 0.25, z: 0.80}, {x: 0.26, y: 0.25, z: 0.79}
-      ];
-
-      [...leftEyePos, ...rightEyePos].forEach(pos => {
-        const pixel = new THREE.Mesh(eyeGeo, glowMaterial);
-        pixel.position.set(pos.x, pos.y, pos.z);
-        eyeGroup.add(pixel);
-      });
-      robotGroup.add(eyeGroup);
-
-      // 4. Neck
-      const neckGeo = new THREE.CylinderGeometry(0.28, 0.32, 0.5, 16);
-      const neckMesh = new THREE.Mesh(neckGeo, jointMaterial);
-      neckMesh.position.set(0, -1.25, -0.05);
-      robotGroup.add(neckMesh);
-
-      // 5. Torso/Chest
-      const chestGeo = new THREE.CylinderGeometry(0.85, 0.55, 1.8, 16);
-      chestGeo.scale(1.25, 1, 0.7);
-      const chestMesh = new THREE.Mesh(chestGeo, bodyMaterial);
-      chestMesh.position.set(0, -2.35, -0.12);
-      robotGroup.add(chestMesh);
-
-      // 6. Glowing Core inside Chest
-      const coreGeo = new THREE.SphereGeometry(0.12, 16, 16);
-      const coreMesh = new THREE.Mesh(coreGeo, glowMaterial);
-      coreMesh.position.set(0, -2.05, 0.45);
-      robotGroup.add(coreMesh);
-
-      // 7. Chest logo details
-      const ringGeo = new THREE.RingGeometry(0.2, 0.24, 32);
-      const ringMat = new THREE.MeshBasicMaterial({ color: 0xffffff, side: THREE.DoubleSide, transparent: true, opacity: 0.25 });
-      const ringMesh = new THREE.Mesh(ringGeo, ringMat);
-      ringMesh.position.set(0, -2.05, 0.46);
-      robotGroup.add(ringMesh);
-
-      // 8. Shoulders
-      const shGeo = new THREE.SphereGeometry(0.32, 16, 16);
-      const shL = new THREE.Mesh(shGeo, jointMaterial);
-      shL.position.set(-1.15, -1.9, -0.12);
-      const shR = new THREE.Mesh(shGeo, jointMaterial);
-      shR.position.set(1.15, -1.9, -0.12);
-      robotGroup.add(shL);
-      robotGroup.add(shR);
-
-      // 9. Upper Arms
-      const armGeo = new THREE.CylinderGeometry(0.23, 0.2, 1.1, 16);
-      const armL = new THREE.Mesh(armGeo, bodyMaterial);
-      armL.position.set(-1.3, -2.5, -0.12);
-      armL.rotation.z = Math.PI / 12;
-      const armR = new THREE.Mesh(armGeo, bodyMaterial);
-      armR.position.set(1.3, -2.5, -0.12);
-      armR.rotation.z = -Math.PI / 12;
-      robotGroup.add(armL);
-      robotGroup.add(armR);
-
-      // 10. Background Particles
-      const particlesCount = 200;
-      const particlesGeo = new THREE.BufferGeometry();
-      const positions = new Float32Array(particlesCount * 3);
-      const speeds = [];
-
-      for (let i = 0; i < particlesCount * 3; i += 3) {
-        positions[i] = (Math.random() - 0.5) * 10;
-        positions[i + 1] = (Math.random() - 0.5) * 10;
-        positions[i + 2] = (Math.random() - 0.5) * 6;
-        speeds.push({
-          x: (Math.random() - 0.5) * 0.0015,
-          y: (Math.random() - 0.5) * 0.0015,
-          z: (Math.random() - 0.5) * 0.0015
+      // ---- Procedural Environment Map ----
+      // This creates a simple gradient cubemap so metallic surfaces have something to reflect
+      function createEnvMap() {
+        const size = 64;
+        const cubeRenderTarget = new THREE.WebGLCubeRenderTarget(size);
+        const cubeCamera = new THREE.CubeCamera(0.1, 10, cubeRenderTarget);
+        
+        // Create a simple gradient background sphere for the env map
+        const envScene = new THREE.Scene();
+        const envGeo = new THREE.SphereGeometry(5, 32, 32);
+        const envMat = new THREE.ShaderMaterial({
+          side: THREE.BackSide,
+          uniforms: {},
+          vertexShader: `
+            varying vec3 vWorldPosition;
+            void main() {
+              vec4 worldPos = modelMatrix * vec4(position, 1.0);
+              vWorldPosition = worldPos.xyz;
+              gl_Position = projectionMatrix * viewMatrix * worldPos;
+            }
+          `,
+          fragmentShader: `
+            varying vec3 vWorldPosition;
+            void main() {
+              vec3 dir = normalize(vWorldPosition);
+              float t = dir.y * 0.5 + 0.5;
+              vec3 colorBottom = vec3(0.0, 0.0, 0.0);
+              vec3 colorTop = vec3(0.12, 0.12, 0.15);
+              vec3 colorHighlight = vec3(0.25, 0.28, 0.35);
+              vec3 color = mix(colorBottom, colorTop, t);
+              // Add some subtle horizontal highlights
+              float hAngle = atan(dir.z, dir.x);
+              float highlight = pow(max(0.0, cos(hAngle * 2.0)), 8.0) * 0.3;
+              color += colorHighlight * highlight;
+              gl_FragColor = vec4(color, 1.0);
+            }
+          `
         });
+        const envMesh = new THREE.Mesh(envGeo, envMat);
+        envScene.add(envMesh);
+        
+        cubeCamera.position.set(0, 0, 0);
+        cubeCamera.update(renderer, envScene);
+        
+        envMesh.geometry.dispose();
+        envMat.dispose();
+        
+        return cubeRenderTarget.texture;
       }
 
-      particlesGeo.setAttribute('position', new THREE.BufferAttribute(positions, 3));
+      const envMap = createEnvMap();
 
-      // Circle particle texture
-      const pCanvas = document.createElement('canvas');
-      pCanvas.width = 16;
-      pCanvas.height = 16;
-      const pCtx = pCanvas.getContext('2d');
-      const grad = pCtx.createRadialGradient(8, 8, 0, 8, 8, 8);
-      grad.addColorStop(0, 'rgba(255, 255, 255, 1)');
-      grad.addColorStop(0.3, 'rgba(0, 240, 255, 0.8)');
-      grad.addColorStop(1, 'rgba(0, 0, 0, 0)');
-      pCtx.fillStyle = grad;
-      pCtx.fillRect(0, 0, 16, 16);
-      const particleTexture = new THREE.CanvasTexture(pCanvas);
+      // ---- Materials ----
+      // Using MeshStandardMaterial with envMap ensures proper reflections in r128
+      const bodyMat = new THREE.MeshStandardMaterial({
+        color: 0x222222,
+        metalness: 0.85,
+        roughness: 0.15,
+        envMap: envMap,
+        envMapIntensity: 2.0
+      });
 
-      const particlesMaterial = new THREE.PointsMaterial({
-        size: 0.06,
-        map: particleTexture,
+      const jointMat = new THREE.MeshStandardMaterial({
+        color: 0x333333,
+        metalness: 0.7,
+        roughness: 0.3,
+        envMap: envMap,
+        envMapIntensity: 1.5
+      });
+
+      const visorMat = new THREE.MeshPhongMaterial({
+        color: 0x111111,
+        specular: 0x666666,
+        shininess: 120,
         transparent: true,
-        opacity: 0.5,
+        opacity: 0.9,
+        envMap: envMap,
+        reflectivity: 0.6
+      });
+
+      const glowMat = new THREE.MeshBasicMaterial({ color: 0x00f0ff });
+      const glowMatDim = new THREE.MeshBasicMaterial({ color: 0x003344 });
+
+      // ---- Robot Group ----
+      const robot = new THREE.Group();
+      scene.add(robot);
+
+      // Helper functions
+      function makeSphere(r, mat, pos, scl) {
+        const geo = new THREE.SphereGeometry(r, 32, 32);
+        const mesh = new THREE.Mesh(geo, mat);
+        if (pos) mesh.position.set(pos.x, pos.y, pos.z);
+        if (scl) mesh.scale.set(scl.x, scl.y, scl.z);
+        return mesh;
+      }
+
+      function makeCylinder(rt, rb, h, mat, pos, rot) {
+        const geo = new THREE.CylinderGeometry(rt, rb, h, 20);
+        const mesh = new THREE.Mesh(geo, mat);
+        if (pos) mesh.position.set(pos.x, pos.y, pos.z);
+        if (rot) mesh.rotation.set(rot.x, rot.y, rot.z);
+        return mesh;
+      }
+
+      // ===== HEAD =====
+      const head = makeSphere(0.65, bodyMat, {x:0, y:2.1, z:0}, {x:1, y:1.2, z:0.95});
+      robot.add(head);
+
+      // Visor
+      const visor = makeSphere(0.58, visorMat, {x:0, y:2.2, z:0.22}, {x:1.02, y:0.55, z:0.7});
+      robot.add(visor);
+
+      // Eye dots (LED matrix)
+      const eyePositions = [
+        // Left eye cluster
+        {x:-0.18, y:2.22, z:0.48}, {x:-0.13, y:2.22, z:0.49}, {x:-0.08, y:2.22, z:0.50},
+        {x:-0.16, y:2.26, z:0.48}, {x:-0.11, y:2.26, z:0.49},
+        {x:-0.18, y:2.18, z:0.48}, {x:-0.13, y:2.18, z:0.49}, {x:-0.08, y:2.18, z:0.50},
+        // Right eye cluster  
+        {x:0.08, y:2.22, z:0.50}, {x:0.13, y:2.22, z:0.49}, {x:0.18, y:2.22, z:0.48},
+        {x:0.11, y:2.26, z:0.49}, {x:0.16, y:2.26, z:0.48},
+        {x:0.08, y:2.18, z:0.50}, {x:0.13, y:2.18, z:0.49}, {x:0.18, y:2.18, z:0.48},
+      ];
+
+      const eyeDots = [];
+      eyePositions.forEach(p => {
+        const dot = makeSphere(0.018, glowMat, p);
+        robot.add(dot);
+        eyeDots.push(dot);
+      });
+
+      // ===== NECK =====
+      const neck = makeCylinder(0.15, 0.18, 0.25, jointMat, {x:0, y:1.55, z:0});
+      robot.add(neck);
+
+      // Neck ring details
+      const neckRing = new THREE.Mesh(
+        new THREE.TorusGeometry(0.19, 0.02, 8, 24),
+        jointMat
+      );
+      neckRing.position.set(0, 1.45, 0);
+      neckRing.rotation.x = Math.PI / 2;
+      robot.add(neckRing);
+
+      // ===== TORSO =====
+      // Upper chest
+      const chest = makeCylinder(0.55, 0.42, 0.9, bodyMat, {x:0, y:1.0, z:0}, null);
+      chest.scale.set(1.2, 1, 0.7);
+      robot.add(chest);
+
+      // Lower torso / waist
+      const waist = makeCylinder(0.38, 0.30, 0.45, bodyMat, {x:0, y:0.45, z:0});
+      waist.scale.set(1.1, 1, 0.65);
+      robot.add(waist);
+
+      // Chest panel / plate
+      const chestPlate = makeCylinder(0.35, 0.30, 0.12, jointMat, {x:0, y:1.1, z:0.28});
+      chestPlate.scale.set(1.4, 1, 0.3);
+      robot.add(chestPlate);
+
+      // Glowing core (center of chest)
+      const core = makeSphere(0.06, glowMat, {x:0, y:1.05, z:0.36});
+      robot.add(core);
+
+      // Core ring
+      const coreRing = new THREE.Mesh(
+        new THREE.RingGeometry(0.09, 0.12, 32),
+        new THREE.MeshBasicMaterial({ color: 0xffffff, side: THREE.DoubleSide, transparent: true, opacity: 0.2 })
+      );
+      coreRing.position.set(0, 1.05, 0.37);
+      robot.add(coreRing);
+
+      // "AVABOT" label area (subtle strip)
+      const labelStrip = new THREE.Mesh(
+        new THREE.PlaneGeometry(0.5, 0.06),
+        new THREE.MeshBasicMaterial({ color: 0xffffff, transparent: true, opacity: 0.08 })
+      );
+      labelStrip.position.set(0, 0.85, 0.35);
+      robot.add(labelStrip);
+
+      // ===== SHOULDERS =====
+      const shoulderL = makeSphere(0.18, jointMat, {x:-0.72, y:1.3, z:0});
+      const shoulderR = makeSphere(0.18, jointMat, {x:0.72, y:1.3, z:0});
+      robot.add(shoulderL);
+      robot.add(shoulderR);
+
+      // Shoulder armor plates
+      const shoulderArmorGeo = new THREE.SphereGeometry(0.22, 16, 16, 0, Math.PI * 2, 0, Math.PI / 2);
+      const shoulderArmorL = new THREE.Mesh(shoulderArmorGeo, bodyMat);
+      shoulderArmorL.position.set(-0.72, 1.32, 0);
+      shoulderArmorL.scale.set(1.1, 0.8, 0.9);
+      robot.add(shoulderArmorL);
+      const shoulderArmorR = new THREE.Mesh(shoulderArmorGeo.clone(), bodyMat);
+      shoulderArmorR.position.set(0.72, 1.32, 0);
+      shoulderArmorR.scale.set(1.1, 0.8, 0.9);
+      robot.add(shoulderArmorR);
+
+      // ===== UPPER ARMS =====
+      const upperArmL = makeCylinder(0.12, 0.10, 0.55, bodyMat, {x:-0.78, y:0.9, z:0});
+      upperArmL.rotation.z = 0.15;
+      const upperArmR = makeCylinder(0.12, 0.10, 0.55, bodyMat, {x:0.78, y:0.9, z:0});
+      upperArmR.rotation.z = -0.15;
+      robot.add(upperArmL);
+      robot.add(upperArmR);
+
+      // Elbow joints
+      const elbowL = makeSphere(0.11, jointMat, {x:-0.82, y:0.58, z:0});
+      const elbowR = makeSphere(0.11, jointMat, {x:0.82, y:0.58, z:0});
+      robot.add(elbowL);
+      robot.add(elbowR);
+
+      // ===== LOWER ARMS =====
+      const lowerArmL = makeCylinder(0.10, 0.09, 0.5, bodyMat, {x:-0.85, y:0.28, z:0});
+      lowerArmL.rotation.z = 0.08;
+      const lowerArmR = makeCylinder(0.10, 0.09, 0.5, bodyMat, {x:0.85, y:0.28, z:0});
+      lowerArmR.rotation.z = -0.08;
+      robot.add(lowerArmL);
+      robot.add(lowerArmR);
+
+      // ===== HANDS =====
+      const handL = makeSphere(0.09, jointMat, {x:-0.86, y:0.0, z:0}, {x:0.9, y:1.1, z:0.7});
+      const handR = makeSphere(0.09, jointMat, {x:0.86, y:0.0, z:0}, {x:0.9, y:1.1, z:0.7});
+      robot.add(handL);
+      robot.add(handR);
+
+      // ===== HIP / PELVIS =====
+      const hip = makeCylinder(0.28, 0.22, 0.2, jointMat, {x:0, y:0.2, z:0});
+      hip.scale.set(1.2, 1, 0.7);
+      robot.add(hip);
+
+      // ===== UPPER LEGS =====
+      const upperLegL = makeCylinder(0.12, 0.10, 0.65, bodyMat, {x:-0.22, y:-0.22, z:0});
+      const upperLegR = makeCylinder(0.12, 0.10, 0.65, bodyMat, {x:0.22, y:-0.22, z:0});
+      robot.add(upperLegL);
+      robot.add(upperLegR);
+
+      // Knee joints
+      const kneeL = makeSphere(0.11, jointMat, {x:-0.22, y:-0.58, z:0});
+      const kneeR = makeSphere(0.11, jointMat, {x:0.22, y:-0.58, z:0});
+      robot.add(kneeL);
+      robot.add(kneeR);
+
+      // ===== LOWER LEGS =====
+      const lowerLegL = makeCylinder(0.10, 0.09, 0.6, bodyMat, {x:-0.22, y:-0.92, z:0});
+      const lowerLegR = makeCylinder(0.10, 0.09, 0.6, bodyMat, {x:0.22, y:-0.92, z:0});
+      robot.add(lowerLegL);
+      robot.add(lowerLegR);
+
+      // ===== FEET =====
+      const footGeo = new THREE.BoxGeometry(0.16, 0.06, 0.26);
+      const footL = new THREE.Mesh(footGeo, jointMat);
+      footL.position.set(-0.22, -1.25, 0.04);
+      const footR = new THREE.Mesh(footGeo.clone(), jointMat);
+      footR.position.set(0.22, -1.25, 0.04);
+      robot.add(footL);
+      robot.add(footR);
+
+      // Center the robot group vertically
+      robot.position.set(0, 0.2, 0);
+
+      // ===== BACKGROUND PARTICLES =====
+      const particleCount = 250;
+      const particleGeo = new THREE.BufferGeometry();
+      const positions = new Float32Array(particleCount * 3);
+      const pSpeeds = [];
+
+      for (let i = 0; i < particleCount * 3; i += 3) {
+        positions[i]     = (Math.random() - 0.5) * 14;
+        positions[i + 1] = (Math.random() - 0.5) * 14;
+        positions[i + 2] = (Math.random() - 0.5) * 8;
+        pSpeeds.push({
+          x: (Math.random() - 0.5) * 0.002,
+          y: (Math.random() - 0.5) * 0.002,
+          z: (Math.random() - 0.5) * 0.001
+        });
+      }
+      particleGeo.setAttribute('position', new THREE.BufferAttribute(positions, 3));
+
+      // Particle texture
+      const pCanvas = document.createElement('canvas');
+      pCanvas.width = 32; pCanvas.height = 32;
+      const pCtx = pCanvas.getContext('2d');
+      const grad = pCtx.createRadialGradient(16, 16, 0, 16, 16, 16);
+      grad.addColorStop(0, 'rgba(255,255,255,1)');
+      grad.addColorStop(0.2, 'rgba(0,200,255,0.8)');
+      grad.addColorStop(1, 'rgba(0,0,0,0)');
+      pCtx.fillStyle = grad;
+      pCtx.fillRect(0, 0, 32, 32);
+
+      const particleMat = new THREE.PointsMaterial({
+        size: 0.08,
+        map: new THREE.CanvasTexture(pCanvas),
+        transparent: true,
+        opacity: 0.6,
         blending: THREE.AdditiveBlending,
         depthWrite: false
       });
 
-      const particleSystem = new THREE.Points(particlesGeo, particlesMaterial);
-      scene.add(particleSystem);
+      const particles = new THREE.Points(particleGeo, particleMat);
+      scene.add(particles);
 
-      // Lights configuration
-      const ambientLight = new THREE.AmbientLight(0xffffff, 0.35); // higher ambient for non-envMap diffuse
-      scene.add(ambientLight);
+      // ===== LIGHTING =====
+      // Strong ambient so the robot is always visible
+      scene.add(new THREE.AmbientLight(0xffffff, 0.5));
 
-      const keyLight = new THREE.DirectionalLight(0xffffff, 3.0);
-      keyLight.position.set(5, 5, 4);
+      // Key light from top-right-front
+      const keyLight = new THREE.DirectionalLight(0xffffff, 2.0);
+      keyLight.position.set(3, 4, 5);
       scene.add(keyLight);
 
-      const fillLight = new THREE.DirectionalLight(0x00f0ff, 3.5);
-      fillLight.position.set(-6, 2, 2);
+      // Cyan fill light from left
+      const fillLight = new THREE.DirectionalLight(0x00ccff, 2.5);
+      fillLight.position.set(-5, 2, 3);
       scene.add(fillLight);
 
-      const backLight = new THREE.DirectionalLight(0xffffff, 1.2);
-      backLight.position.set(0, 1, -5);
+      // Backlight for rim/edge lighting
+      const backLight = new THREE.DirectionalLight(0xffffff, 1.5);
+      backLight.position.set(0, 3, -5);
       scene.add(backLight);
 
-      // Mouse Tracking Parallax
-      let targetRotX = 0;
+      // Bottom subtle up-light 
+      const bottomLight = new THREE.DirectionalLight(0x003355, 1.0);
+      bottomLight.position.set(0, -3, 2);
+      scene.add(bottomLight);
+
+      // Point light near the core for localized glow
+      const coreLight = new THREE.PointLight(0x00f0ff, 2, 3);
+      coreLight.position.set(0, 1.05, 0.4);
+      scene.add(coreLight);
+
+      console.log('[Avabot3D] Scene built. Starting animation loop.');
+
+      // ===== MOUSE TRACKING =====
       let targetRotY = 0;
+      let targetRotX = 0;
 
       document.addEventListener('mousemove', (e) => {
-        const w = window.innerWidth;
-        const h = window.innerHeight;
-        const mx = (e.clientX / w) - 0.5;
-        const my = (e.clientY / h) - 0.5;
-
-        targetRotY = mx * 0.75;
-        targetRotX = my * 0.45;
+        const mx = (e.clientX / window.innerWidth) - 0.5;
+        const my = (e.clientY / window.innerHeight) - 0.5;
+        targetRotY = mx * 0.6;
+        targetRotX = my * 0.3;
       });
 
-      // Animation Loop
+      // ===== ANIMATION LOOP =====
       let time = 0;
+
       function animate() {
         requestAnimationFrame(animate);
-        time += 0.012;
+        time += 0.016;
 
-        robotGroup.rotation.y += (targetRotY - robotGroup.rotation.y) * 0.08;
-        robotGroup.rotation.x += (targetRotX - robotGroup.rotation.x) * 0.08;
+        // Smooth lerp rotation
+        robot.rotation.y += (targetRotY - robot.rotation.y) * 0.06;
+        robot.rotation.x += (targetRotX - robot.rotation.x) * 0.06;
 
-        // Breathe auto float
-        robotGroup.position.y = 1.25 + Math.sin(time * 1.5) * 0.12;
+        // Breathing float
+        robot.position.y = 0.2 + Math.sin(time * 1.2) * 0.1;
 
-        // Eye pulsation
-        const intensity = 0.5 + Math.sin(time * 4.0) * 0.5;
-        glowMaterial.color.setRGB(0.0, intensity * 0.9 + 0.1, intensity * 1.0);
+        // Eye + core glow pulsation
+        const pulse = 0.5 + Math.sin(time * 3.0) * 0.5;
+        const r = 0.0;
+        const g = pulse * 0.94 + 0.06;
+        const b = pulse * 1.0;
+        glowMat.color.setRGB(r, g, b);
+        coreLight.intensity = 1.0 + pulse * 2.0;
 
-        // Drift particles
-        const posArr = particlesGeo.attributes.position.array;
-        for (let i = 0; i < particlesCount * 3; i += 3) {
-          posArr[i] += speeds[i/3].x;
-          posArr[i+1] += speeds[i/3].y;
-          posArr[i+2] += speeds[i/3].z;
-
-          if (Math.abs(posArr[i]) > 5) posArr[i] = (Math.random() - 0.5) * 10;
-          if (Math.abs(posArr[i+1]) > 5) posArr[i+1] = (Math.random() - 0.5) * 10;
-          if (Math.abs(posArr[i+2]) > 3) posArr[i+2] = (Math.random() - 0.5) * 6;
+        // Particle drift
+        const posArr = particleGeo.attributes.position.array;
+        for (let i = 0; i < particleCount * 3; i += 3) {
+          const idx = i / 3;
+          posArr[i]     += pSpeeds[idx].x;
+          posArr[i + 1] += pSpeeds[idx].y;
+          posArr[i + 2] += pSpeeds[idx].z;
+          if (Math.abs(posArr[i]) > 7) posArr[i] = (Math.random() - 0.5) * 14;
+          if (Math.abs(posArr[i+1]) > 7) posArr[i+1] = (Math.random() - 0.5) * 14;
+          if (Math.abs(posArr[i+2]) > 4) posArr[i+2] = (Math.random() - 0.5) * 8;
         }
-        particlesGeo.attributes.position.needsUpdate = true;
+        particleGeo.attributes.position.needsUpdate = true;
 
         renderer.render(scene, camera);
       }
 
       animate();
 
-      // Window Resize Handler
+      // ===== RESIZE =====
       window.addEventListener('resize', () => {
-        const w = container.clientWidth || Math.min(window.innerHeight * 0.8, 680);
-        const h = container.clientHeight || Math.min(window.innerHeight * 0.8, 680);
-        camera.aspect = w / h;
+        const rw = container.clientWidth || w;
+        const rh = container.clientHeight || h;
+        camera.aspect = rw / rh;
         camera.updateProjectionMatrix();
-        renderer.setSize(w, h);
+        renderer.setSize(rw, rh);
       });
 
     } catch (err) {
-      console.error("Three.js runtime error:", err);
-      showVisualErrorBanner(err);
+      console.error('[Avabot3D] Fatal error:', err);
+      const errEl = document.createElement('div');
+      errEl.style.cssText = 'position:fixed;top:10px;left:10px;right:10px;background:rgba(200,30,30,0.95);color:#fff;padding:15px;border-radius:8px;z-index:999999;font:13px/1.4 monospace;box-shadow:0 10px 30px rgba(0,0,0,0.5)';
+      errEl.innerHTML = `<b>Avabot WebGL Error:</b> ${err.message}<br><small>${err.stack||''}</small>`;
+      document.body.appendChild(errEl);
     }
   }
 
-  // Visual error reporter for client verification
-  function showVisualErrorBanner(err) {
-    const errorDiv = document.createElement('div');
-    errorDiv.style.position = 'fixed';
-    errorDiv.style.top = '10px';
-    errorDiv.style.left = '10px';
-    errorDiv.style.right = '10px';
-    errorDiv.style.background = 'rgba(220, 50, 50, 0.95)';
-    errorDiv.style.color = '#fff';
-    errorDiv.style.padding = '15px';
-    errorDiv.style.borderRadius = '8px';
-    errorDiv.style.zIndex = '999999';
-    errorDiv.style.fontFamily = 'monospace';
-    errorDiv.style.fontSize = '13px';
-    errorDiv.style.lineHeight = '1.4';
-    errorDiv.style.boxShadow = '0 10px 30px rgba(0,0,0,0.5)';
-    errorDiv.innerHTML = `<strong>Avabot WebGL Error:</strong> ${err.message}<br><small>${err.stack || ''}</small>`;
-    document.body.appendChild(errorDiv);
-  }
-
-  // Safe load trigger for Three.js initialization
+  // Trigger init on window load to ensure CSS layout is fully resolved
   if (document.readyState === 'complete') {
     init3D();
   } else {
