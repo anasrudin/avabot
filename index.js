@@ -187,13 +187,12 @@ document.addEventListener('DOMContentLoaded', () => {
       console.log('[Avabot3D] Renderer created and appended');
 
       // ---- Procedural Environment Map ----
-      // This creates a simple gradient cubemap so metallic surfaces have something to reflect
+      // Creates a studio environment map with sharp, high-contrast softbox panel reflections
       function createEnvMap() {
-        const size = 64;
+        const size = 256;
         const cubeRenderTarget = new THREE.WebGLCubeRenderTarget(size);
         const cubeCamera = new THREE.CubeCamera(0.1, 10, cubeRenderTarget);
         
-        // Create a simple gradient background sphere for the env map
         const envScene = new THREE.Scene();
         const envGeo = new THREE.SphereGeometry(5, 32, 32);
         const envMat = new THREE.ShaderMaterial({
@@ -211,15 +210,34 @@ document.addEventListener('DOMContentLoaded', () => {
             varying vec3 vWorldPosition;
             void main() {
               vec3 dir = normalize(vWorldPosition);
-              float t = dir.y * 0.5 + 0.5;
-              vec3 colorBottom = vec3(0.0, 0.0, 0.0);
-              vec3 colorTop = vec3(0.12, 0.12, 0.15);
-              vec3 colorHighlight = vec3(0.25, 0.28, 0.35);
-              vec3 color = mix(colorBottom, colorTop, t);
-              // Add some subtle horizontal highlights
-              float hAngle = atan(dir.z, dir.x);
-              float highlight = pow(max(0.0, cos(hAngle * 2.0)), 8.0) * 0.3;
-              color += colorHighlight * highlight;
+              
+              // Dark background
+              vec3 color = vec3(0.015, 0.015, 0.02);
+              
+              // Softbox 1: Left-Front Studio Light
+              float angleY = atan(dir.z, dir.x);
+              float softbox1 = smoothstep(0.88, 0.92, cos(angleY - 0.7)) * 
+                               smoothstep(-0.6, -0.4, dir.y) * 
+                               smoothstep(-0.6, -0.4, -dir.y);
+              
+              // Softbox 2: Right-Front Studio Light
+              float softbox2 = smoothstep(0.88, 0.92, cos(angleY + 0.7)) * 
+                               smoothstep(-0.6, -0.4, dir.y) * 
+                               smoothstep(-0.6, -0.4, -dir.y);
+                               
+              // Softbox 3: Top Ambient Sky Highlight
+              float softbox3 = smoothstep(0.85, 0.95, dir.y);
+              
+              // Softbox 4: Back Rim Highlight
+              float softbox4 = smoothstep(0.92, 0.96, cos(angleY - 3.14)) * 
+                               smoothstep(-0.8, -0.6, dir.y) * 
+                               smoothstep(-0.8, -0.6, -dir.y);
+              
+              color += vec3(1.0, 1.0, 1.0) * softbox1 * 2.5;
+              color += vec3(0.95, 0.98, 1.0) * softbox2 * 2.5;
+              color += vec3(1.0, 1.0, 1.0) * softbox3 * 1.5;
+              color += vec3(1.0, 1.0, 1.0) * softbox4 * 2.0;
+              
               gl_FragColor = vec4(color, 1.0);
             }
           `
@@ -239,41 +257,35 @@ document.addEventListener('DOMContentLoaded', () => {
       const envMap = createEnvMap();
 
       // ---- Materials ----
-      // Using MeshStandardMaterial with envMap ensures proper reflections in r128
       const bodyMat = new THREE.MeshStandardMaterial({
-        color: 0x222222,
-        metalness: 0.85,
-        roughness: 0.15,
+        color: 0x050505,
+        metalness: 0.98,
+        roughness: 0.08,
         envMap: envMap,
-        envMapIntensity: 2.0
+        envMapIntensity: 2.5
       });
 
       const jointMat = new THREE.MeshStandardMaterial({
-        color: 0x333333,
-        metalness: 0.7,
-        roughness: 0.3,
+        color: 0x1a1a1a,
+        metalness: 0.85,
+        roughness: 0.25,
         envMap: envMap,
         envMapIntensity: 1.5
       });
 
-      const visorMat = new THREE.MeshPhongMaterial({
-        color: 0x111111,
-        specular: 0x666666,
-        shininess: 120,
-        transparent: true,
-        opacity: 0.9,
+      const visorMat = new THREE.MeshStandardMaterial({
+        color: 0x010101,
+        metalness: 0.95,
+        roughness: 0.02,
         envMap: envMap,
-        reflectivity: 0.6
+        envMapIntensity: 3.0
       });
-
-      const glowMat = new THREE.MeshBasicMaterial({ color: 0x00f0ff });
-      const glowMatDim = new THREE.MeshBasicMaterial({ color: 0x003344 });
 
       // ---- Robot Group ----
       const robot = new THREE.Group();
       scene.add(robot);
 
-      // Helper functions
+      // Helper functions for geometry creation
       function makeSphere(r, mat, pos, scl) {
         const geo = new THREE.SphereGeometry(r, 32, 32);
         const mesh = new THREE.Mesh(geo, mat);
@@ -282,169 +294,245 @@ document.addEventListener('DOMContentLoaded', () => {
         return mesh;
       }
 
+      // Explicit segmentation to prevent cache conflict
       function makeCylinder(rt, rb, h, mat, pos, rot) {
-        const geo = new THREE.CylinderGeometry(rt, rb, h, 20);
+        const geo = new THREE.CylinderGeometry(rt, rb, h, 32);
         const mesh = new THREE.Mesh(geo, mat);
         if (pos) mesh.position.set(pos.x, pos.y, pos.z);
         if (rot) mesh.rotation.set(rot.x, rot.y, rot.z);
         return mesh;
       }
 
-      // ===== HEAD =====
-      const head = makeSphere(0.65, bodyMat, {x:0, y:2.1, z:0}, {x:1, y:1.2, z:0.95});
-      robot.add(head);
+      function makeBox(w, h, d, mat, pos, rot) {
+        const geo = new THREE.BoxGeometry(w, h, d);
+        const mesh = new THREE.Mesh(geo, mat);
+        if (pos) mesh.position.set(pos.x, pos.y, pos.z);
+        if (rot) mesh.rotation.set(rot.x, rot.y, rot.z);
+        return mesh;
+      }
 
-      // Visor
-      const visor = makeSphere(0.58, visorMat, {x:0, y:2.2, z:0.22}, {x:1.02, y:0.55, z:0.7});
-      robot.add(visor);
+      // ===== HEAD & HELMET =====
+      const headGroup = new THREE.Group();
+      headGroup.position.set(0, 2.1, 0);
+      robot.add(headGroup);
 
-      // Eye dots (LED matrix)
-      const eyePositions = [
-        // Left eye cluster
-        {x:-0.18, y:2.22, z:0.48}, {x:-0.13, y:2.22, z:0.49}, {x:-0.08, y:2.22, z:0.50},
-        {x:-0.16, y:2.26, z:0.48}, {x:-0.11, y:2.26, z:0.49},
-        {x:-0.18, y:2.18, z:0.48}, {x:-0.13, y:2.18, z:0.49}, {x:-0.08, y:2.18, z:0.50},
-        // Right eye cluster  
-        {x:0.08, y:2.22, z:0.50}, {x:0.13, y:2.22, z:0.49}, {x:0.18, y:2.22, z:0.48},
-        {x:0.11, y:2.26, z:0.49}, {x:0.16, y:2.26, z:0.48},
-        {x:0.08, y:2.18, z:0.50}, {x:0.13, y:2.18, z:0.49}, {x:0.18, y:2.18, z:0.48},
-      ];
+      const helmetBase = makeSphere(0.48, bodyMat, {x:0, y:0, z:0}, {x:1.0, y:1.2, z:1.0});
+      headGroup.add(helmetBase);
 
-      const eyeDots = [];
-      eyePositions.forEach(p => {
-        const dot = makeSphere(0.018, glowMat, p);
-        robot.add(dot);
-        eyeDots.push(dot);
-      });
+      const visorPanel = makeSphere(0.46, visorMat, {x:0, y:0.04, z:0.08}, {x:1.02, y:0.8, z:1.02});
+      headGroup.add(visorPanel);
+
+      const earL = makeCylinder(0.08, 0.08, 0.06, jointMat, {x:-0.46, y:0, z:0}, {x:0, y:0, z:Math.PI/2});
+      const earR = makeCylinder(0.08, 0.08, 0.06, jointMat, {x:0.46, y:0, z:0}, {x:0, y:0, z:Math.PI/2});
+      headGroup.add(earL);
+      headGroup.add(earR);
+
+      const jawPlate = makeSphere(0.3, bodyMat, {x:0, y:-0.2, z:0.12}, {x:0.9, y:0.7, z:1.0});
+      headGroup.add(jawPlate);
 
       // ===== NECK =====
-      const neck = makeCylinder(0.15, 0.18, 0.25, jointMat, {x:0, y:1.55, z:0});
-      robot.add(neck);
+      const neckGroup = new THREE.Group();
+      neckGroup.position.set(0, 1.55, 0);
+      robot.add(neckGroup);
 
-      // Neck ring details
-      const neckRing = new THREE.Mesh(
-        new THREE.TorusGeometry(0.19, 0.02, 8, 24),
-        jointMat
-      );
-      neckRing.position.set(0, 1.45, 0);
-      neckRing.rotation.x = Math.PI / 2;
-      robot.add(neckRing);
+      const neckSpindle = makeCylinder(0.12, 0.14, 0.28, jointMat);
+      neckGroup.add(neckSpindle);
 
-      // ===== TORSO =====
-      // Upper chest
-      const chest = makeCylinder(0.55, 0.42, 0.9, bodyMat, {x:0, y:1.0, z:0}, null);
-      chest.scale.set(1.2, 1, 0.7);
-      robot.add(chest);
+      const neckRingUpper = makeCylinder(0.16, 0.16, 0.04, jointMat, {x:0, y:0.1, z:0});
+      const neckRingLower = makeCylinder(0.18, 0.18, 0.04, jointMat, {x:0, y:-0.1, z:0});
+      neckGroup.add(neckRingUpper);
+      neckGroup.add(neckRingLower);
 
-      // Lower torso / waist
-      const waist = makeCylinder(0.38, 0.30, 0.45, bodyMat, {x:0, y:0.45, z:0});
-      waist.scale.set(1.1, 1, 0.65);
-      robot.add(waist);
+      // ===== SPINE =====
+      const spineGroup = new THREE.Group();
+      robot.add(spineGroup);
+      for (let i = 0; i < 5; i++) {
+        const segY = 0.45 + i * 0.22;
+        const spineSeg = makeSphere(0.09, jointMat, {x:0, y:segY, z:-0.1});
+        spineGroup.add(spineSeg);
+      }
 
-      // Chest panel / plate
-      const chestPlate = makeCylinder(0.35, 0.30, 0.12, jointMat, {x:0, y:1.1, z:0.28});
-      chestPlate.scale.set(1.4, 1, 0.3);
-      robot.add(chestPlate);
+      // ===== CHEST / TORSO =====
+      const chestGroup = new THREE.Group();
+      robot.add(chestGroup);
 
-      // Glowing core (center of chest)
-      const core = makeSphere(0.06, glowMat, {x:0, y:1.05, z:0.36});
-      robot.add(core);
+      const chestCore = makeCylinder(0.3, 0.24, 0.75, jointMat, {x:0, y:1.15, z:0});
+      chestCore.scale.set(1.4, 1, 0.8);
+      chestGroup.add(chestCore);
 
-      // Core ring
-      const coreRing = new THREE.Mesh(
-        new THREE.RingGeometry(0.09, 0.12, 32),
-        new THREE.MeshBasicMaterial({ color: 0xffffff, side: THREE.DoubleSide, transparent: true, opacity: 0.2 })
-      );
-      coreRing.position.set(0, 1.05, 0.37);
-      robot.add(coreRing);
+      const pecL = makeSphere(0.28, bodyMat, {x:-0.22, y:1.24, z:0.16}, {x:0.9, y:0.7, z:0.6});
+      pecL.rotation.set(0.1, 0.2, -0.05);
+      chestGroup.add(pecL);
 
-      // "AVABOT" label area (subtle strip)
-      const labelStrip = new THREE.Mesh(
-        new THREE.PlaneGeometry(0.5, 0.06),
-        new THREE.MeshBasicMaterial({ color: 0xffffff, transparent: true, opacity: 0.08 })
-      );
-      labelStrip.position.set(0, 0.85, 0.35);
-      robot.add(labelStrip);
+      const pecR = makeSphere(0.28, bodyMat, {x:0.22, y:1.24, z:0.16}, {x:0.9, y:0.7, z:0.6});
+      pecR.rotation.set(0.1, -0.2, 0.05);
+      chestGroup.add(pecR);
 
-      // ===== SHOULDERS =====
-      const shoulderL = makeSphere(0.18, jointMat, {x:-0.72, y:1.3, z:0});
-      const shoulderR = makeSphere(0.18, jointMat, {x:0.72, y:1.3, z:0});
-      robot.add(shoulderL);
-      robot.add(shoulderR);
+      const clavicleL = makeCylinder(0.03, 0.03, 0.52, jointMat, {x:-0.3, y:1.44, z:0.06}, {x:0, y:0, z:Math.PI/2 - 0.15});
+      const clavicleR = makeCylinder(0.03, 0.03, 0.52, jointMat, {x:0.3, y:1.44, z:0.06}, {x:0, y:0, z:-Math.PI/2 + 0.15});
+      chestGroup.add(clavicleL);
+      chestGroup.add(clavicleR);
 
-      // Shoulder armor plates
-      const shoulderArmorGeo = new THREE.SphereGeometry(0.22, 16, 16, 0, Math.PI * 2, 0, Math.PI / 2);
-      const shoulderArmorL = new THREE.Mesh(shoulderArmorGeo, bodyMat);
-      shoulderArmorL.position.set(-0.72, 1.32, 0);
-      shoulderArmorL.scale.set(1.1, 0.8, 0.9);
-      robot.add(shoulderArmorL);
-      const shoulderArmorR = new THREE.Mesh(shoulderArmorGeo.clone(), bodyMat);
-      shoulderArmorR.position.set(0.72, 1.32, 0);
-      shoulderArmorR.scale.set(1.1, 0.8, 0.9);
-      robot.add(shoulderArmorR);
+      const absPositions = [
+        {x:-0.11, y:0.88, z:0.18}, {x:0.11, y:0.88, z:0.18},
+        {x:-0.10, y:0.72, z:0.16}, {x:0.10, y:0.72, z:0.16},
+        {x:-0.09, y:0.56, z:0.14}, {x:0.09, y:0.56, z:0.14}
+      ];
 
-      // ===== UPPER ARMS =====
-      const upperArmL = makeCylinder(0.12, 0.10, 0.55, bodyMat, {x:-0.78, y:0.9, z:0});
-      upperArmL.rotation.z = 0.15;
-      const upperArmR = makeCylinder(0.12, 0.10, 0.55, bodyMat, {x:0.78, y:0.9, z:0});
-      upperArmR.rotation.z = -0.15;
-      robot.add(upperArmL);
-      robot.add(upperArmR);
+      absPositions.forEach(p => {
+        const abPlate = makeSphere(0.09, bodyMat, p, {x:1.0, y:0.68, z:0.5});
+        chestGroup.add(abPlate);
+      });
 
-      // Elbow joints
-      const elbowL = makeSphere(0.11, jointMat, {x:-0.82, y:0.58, z:0});
-      const elbowR = makeSphere(0.11, jointMat, {x:0.82, y:0.58, z:0});
-      robot.add(elbowL);
-      robot.add(elbowR);
+      const latL1 = makeSphere(0.15, bodyMat, {x:-0.34, y:0.92, z:0.06}, {x:0.6, y:1.2, z:0.8});
+      latL1.rotation.z = -0.15;
+      const latR1 = makeSphere(0.15, bodyMat, {x:0.34, y:0.92, z:0.06}, {x:0.6, y:1.2, z:0.8});
+      latR1.rotation.z = 0.15;
+      chestGroup.add(latL1);
+      chestGroup.add(latR1);
 
-      // ===== LOWER ARMS =====
-      const lowerArmL = makeCylinder(0.10, 0.09, 0.5, bodyMat, {x:-0.85, y:0.28, z:0});
-      lowerArmL.rotation.z = 0.08;
-      const lowerArmR = makeCylinder(0.10, 0.09, 0.5, bodyMat, {x:0.85, y:0.28, z:0});
-      lowerArmR.rotation.z = -0.08;
-      robot.add(lowerArmL);
-      robot.add(lowerArmR);
+      const latL2 = makeSphere(0.14, bodyMat, {x:-0.32, y:0.74, z:0.04}, {x:0.6, y:1.2, z:0.8});
+      latL2.rotation.z = -0.1;
+      const latR2 = makeSphere(0.14, bodyMat, {x:0.32, y:0.74, z:0.04}, {x:0.6, y:1.2, z:0.8});
+      latR2.rotation.z = 0.1;
+      chestGroup.add(latL2);
+      chestGroup.add(latR2);
 
-      // ===== HANDS =====
-      const handL = makeSphere(0.09, jointMat, {x:-0.86, y:0.0, z:0}, {x:0.9, y:1.1, z:0.7});
-      const handR = makeSphere(0.09, jointMat, {x:0.86, y:0.0, z:0}, {x:0.9, y:1.1, z:0.7});
-      robot.add(handL);
-      robot.add(handR);
+      // ===== SHOULDERS & ARMS =====
+      const shoulders = [
+        {side: 'L', sign: -1, posX: -0.66, posY: 1.34},
+        {side: 'R', sign: 1, posX: 0.66, posY: 1.34}
+      ];
 
-      // ===== HIP / PELVIS =====
-      const hip = makeCylinder(0.28, 0.22, 0.2, jointMat, {x:0, y:0.2, z:0});
-      hip.scale.set(1.2, 1, 0.7);
-      robot.add(hip);
+      shoulders.forEach(s => {
+        const shoulderJoint = makeSphere(0.14, jointMat, {x:s.posX, y:s.posY, z:0});
+        robot.add(shoulderJoint);
 
-      // ===== UPPER LEGS =====
-      const upperLegL = makeCylinder(0.12, 0.10, 0.65, bodyMat, {x:-0.22, y:-0.22, z:0});
-      const upperLegR = makeCylinder(0.12, 0.10, 0.65, bodyMat, {x:0.22, y:-0.22, z:0});
-      robot.add(upperLegL);
-      robot.add(upperLegR);
+        const pauldron = makeSphere(0.2, bodyMat, {x:s.posX, y:s.posY + 0.06, z:0}, {x:1.1, y:0.9, z:1.1});
+        robot.add(pauldron);
 
-      // Knee joints
-      const kneeL = makeSphere(0.11, jointMat, {x:-0.22, y:-0.58, z:0});
-      const kneeR = makeSphere(0.11, jointMat, {x:0.22, y:-0.58, z:0});
-      robot.add(kneeL);
-      robot.add(kneeR);
+        const upperArmStrut = makeCylinder(0.06, 0.05, 0.52, jointMat, {x:s.posX + s.sign * 0.05, y:s.posY - 0.32, z:0});
+        upperArmStrut.rotation.z = s.sign * 0.08;
+        robot.add(upperArmStrut);
 
-      // ===== LOWER LEGS =====
-      const lowerLegL = makeCylinder(0.10, 0.09, 0.6, bodyMat, {x:-0.22, y:-0.92, z:0});
-      const lowerLegR = makeCylinder(0.10, 0.09, 0.6, bodyMat, {x:0.22, y:-0.92, z:0});
-      robot.add(lowerLegL);
-      robot.add(lowerLegR);
+        const bicepPlate = makeSphere(0.12, bodyMat, {x:s.posX + s.sign * 0.05, y:s.posY - 0.3, z:0.03}, {x:0.8, y:1.4, z:0.8});
+        bicepPlate.rotation.z = s.sign * 0.08;
+        robot.add(bicepPlate);
 
-      // ===== FEET =====
-      const footGeo = new THREE.BoxGeometry(0.16, 0.06, 0.26);
-      const footL = new THREE.Mesh(footGeo, jointMat);
-      footL.position.set(-0.22, -1.25, 0.04);
-      const footR = new THREE.Mesh(footGeo.clone(), jointMat);
-      footR.position.set(0.22, -1.25, 0.04);
-      robot.add(footL);
-      robot.add(footR);
+        const elbow = makeSphere(0.1, jointMat, {x:s.posX + s.sign * 0.09, y:s.posY - 0.62, z:-0.02});
+        robot.add(elbow);
 
-      // Center the robot group vertically
-      robot.position.set(0, 0.2, 0);
+        const forearmStrut = makeCylinder(0.05, 0.042, 0.48, jointMat, {x:s.posX + s.sign * 0.12, y:s.posY - 0.88, z:-0.02});
+        forearmStrut.rotation.z = s.sign * 0.06;
+        robot.add(forearmStrut);
+
+        const forearmPlate = makeCylinder(0.09, 0.07, 0.44, bodyMat, {x:s.posX + s.sign * 0.12, y:s.posY - 0.86, z:0.01});
+        forearmPlate.rotation.z = s.sign * 0.06;
+        robot.add(forearmPlate);
+
+        const wristRing = makeCylinder(0.06, 0.06, 0.04, jointMat, {x:s.posX + s.sign * 0.14, y:s.posY - 1.12, z:-0.02});
+        wristRing.rotation.z = s.sign * 0.06;
+        robot.add(wristRing);
+
+        const handGroup = new THREE.Group();
+        handGroup.position.set(s.posX + s.sign * 0.15, s.posY - 1.2, -0.02);
+        handGroup.rotation.z = s.sign * 0.06;
+        robot.add(handGroup);
+
+        const palm = makeBox(0.09, 0.09, 0.038, jointMat);
+        handGroup.add(palm);
+
+        const fingerSpread = [-0.032, -0.011, 0.011, 0.032];
+        const fingerHeights = [0.06, 0.07, 0.07, 0.06];
+        
+        for (let f = 0; f < 4; f++) {
+          const fx = fingerSpread[f];
+          const fh = fingerHeights[f];
+          
+          const knuckle = makeSphere(0.015, jointMat, {x:fx, y:-0.05, z:0.01});
+          const seg1 = makeCylinder(0.012, 0.01, fh * 0.6, jointMat, {x:fx, y:-0.05 - fh*0.3, z:0.01});
+          const seg2 = makeCylinder(0.009, 0.007, fh * 0.4, jointMat, {x:fx, y:-0.05 - fh*0.7, z:0.01});
+          
+          handGroup.add(knuckle);
+          handGroup.add(seg1);
+          handGroup.add(seg2);
+        }
+        
+        const thumbKnuckle = makeSphere(0.016, jointMat, {x: s.sign * -0.045, y:-0.02, z: 0.02});
+        const thumbSeg = makeCylinder(0.012, 0.009, 0.045, jointMat, {x: s.sign * -0.062, y:-0.042, z:0.025});
+        thumbSeg.rotation.z = s.sign * -0.4;
+        handGroup.add(thumbKnuckle);
+        handGroup.add(thumbSeg);
+      });
+
+      // ===== PELVIS / HIPS =====
+      const pelvisGroup = new THREE.Group();
+      pelvisGroup.position.set(0, 0.18, 0);
+      robot.add(pelvisGroup);
+
+      const pelvisCore = makeCylinder(0.25, 0.2, 0.24, jointMat);
+      pelvisCore.scale.set(1.2, 1, 0.75);
+      pelvisGroup.add(pelvisCore);
+
+      const pelvisCenterArmor = makeSphere(0.18, bodyMat, {x:0, y:-0.06, z:0.08}, {x:1.1, y:1.4, z:0.9});
+      pelvisGroup.add(pelvisCenterArmor);
+
+      const hipPlateL = makeSphere(0.16, bodyMat, {x:-0.2, y:0.02, z:0.02}, {x:0.9, y:1.0, z:0.9});
+      const hipPlateR = makeSphere(0.16, bodyMat, {x:0.2, y:0.02, z:0.02}, {x:0.9, y:1.0, z:0.9});
+      pelvisGroup.add(hipPlateL);
+      pelvisGroup.add(hipPlateR);
+
+      // ===== LEGS =====
+      const legs = [
+        {side: 'L', sign: -1, posX: -0.22},
+        {side: 'R', sign: 1, posX: 0.22}
+      ];
+
+      legs.forEach(l => {
+        const hipJoint = makeSphere(0.13, jointMat, {x:l.posX, y:0.14, z:0});
+        robot.add(hipJoint);
+
+        const thighStrut = makeCylinder(0.075, 0.062, 0.68, jointMat, {x:l.posX, y:-0.24, z:0});
+        robot.add(thighStrut);
+
+        const thighPlate = makeCylinder(0.14, 0.11, 0.62, bodyMat, {x:l.posX, y:-0.24, z:0.04});
+        thighPlate.scale.set(1.15, 1, 0.85);
+        robot.add(thighPlate);
+
+        const knee = makeSphere(0.11, jointMat, {x:l.posX, y:-0.63, z:0.01});
+        robot.add(knee);
+
+        const kneecapPlate = makeSphere(0.09, bodyMat, {x:l.posX, y:-0.6, z:0.09}, {x:0.85, y:1.1, z:0.5});
+        robot.add(kneecapPlate);
+
+        const shinStrut = makeCylinder(0.06, 0.05, 0.65, jointMat, {x:l.posX, y:-1.0, z:0});
+        robot.add(shinStrut);
+
+        const shinPlate = makeCylinder(0.11, 0.08, 0.58, bodyMat, {x:l.posX, y:-0.98, z:0.04});
+        shinPlate.scale.set(1.1, 1, 0.85);
+        robot.add(shinPlate);
+
+        const calfPlate = makeSphere(0.11, bodyMat, {x:l.posX, y:-0.94, z:-0.05}, {x:0.85, y:1.3, z:0.85});
+        robot.add(calfPlate);
+
+        const ankleJoint = makeSphere(0.07, jointMat, {x:l.posX, y:-1.34, z:0.01});
+        robot.add(ankleJoint);
+
+        const footGroup = new THREE.Group();
+        footGroup.position.set(l.posX, -1.41, 0.04);
+        robot.add(footGroup);
+
+        const heel = makeBox(0.08, 0.06, 0.1, jointMat, {x:0, y:0, z:-0.03});
+        const arch = makeBox(0.07, 0.04, 0.12, bodyMat, {x:0, y:-0.01, z:0.06});
+        const toes = makeBox(0.09, 0.03, 0.08, jointMat, {x:0, y:-0.025, z:0.14});
+        
+        footGroup.add(heel);
+        footGroup.add(arch);
+        footGroup.add(toes);
+      });
+
+      robot.position.set(0, 0.35, 0);
+      robot.scale.set(1.1, 1.1, 1.1);
 
       // ===== BACKGROUND PARTICLES =====
       const particleCount = 250;
@@ -470,7 +558,7 @@ document.addEventListener('DOMContentLoaded', () => {
       const pCtx = pCanvas.getContext('2d');
       const grad = pCtx.createRadialGradient(16, 16, 0, 16, 16, 16);
       grad.addColorStop(0, 'rgba(255,255,255,1)');
-      grad.addColorStop(0.2, 'rgba(0,200,255,0.8)');
+      grad.addColorStop(0.2, 'rgba(210,225,255,0.6)');
       grad.addColorStop(1, 'rgba(0,0,0,0)');
       pCtx.fillStyle = grad;
       pCtx.fillRect(0, 0, 32, 32);
@@ -488,33 +576,23 @@ document.addEventListener('DOMContentLoaded', () => {
       scene.add(particles);
 
       // ===== LIGHTING =====
-      // Strong ambient so the robot is always visible
-      scene.add(new THREE.AmbientLight(0xffffff, 0.5));
+      scene.add(new THREE.AmbientLight(0xffffff, 0.03));
 
-      // Key light from top-right-front
-      const keyLight = new THREE.DirectionalLight(0xffffff, 2.0);
-      keyLight.position.set(3, 4, 5);
+      const keyLight = new THREE.DirectionalLight(0xffffff, 0.35);
+      keyLight.position.set(0, 2, 4);
       scene.add(keyLight);
 
-      // Cyan fill light from left
-      const fillLight = new THREE.DirectionalLight(0x00ccff, 2.5);
-      fillLight.position.set(-5, 2, 3);
-      scene.add(fillLight);
+      const rimLightLeft = new THREE.DirectionalLight(0xffffff, 4.0);
+      rimLightLeft.position.set(-5, 3, -4);
+      scene.add(rimLightLeft);
 
-      // Backlight for rim/edge lighting
-      const backLight = new THREE.DirectionalLight(0xffffff, 1.5);
-      backLight.position.set(0, 3, -5);
-      scene.add(backLight);
+      const rimLightRight = new THREE.DirectionalLight(0xffffff, 4.0);
+      rimLightRight.position.set(5, 3, -4);
+      scene.add(rimLightRight);
 
-      // Bottom subtle up-light 
-      const bottomLight = new THREE.DirectionalLight(0x003355, 1.0);
-      bottomLight.position.set(0, -3, 2);
-      scene.add(bottomLight);
-
-      // Point light near the core for localized glow
-      const coreLight = new THREE.PointLight(0x00f0ff, 2, 3);
-      coreLight.position.set(0, 1.05, 0.4);
-      scene.add(coreLight);
+      const topLight = new THREE.DirectionalLight(0xffffff, 1.5);
+      topLight.position.set(0, 5, 0);
+      scene.add(topLight);
 
       console.log('[Avabot3D] Scene built. Starting animation loop.');
 
@@ -536,22 +614,11 @@ document.addEventListener('DOMContentLoaded', () => {
         requestAnimationFrame(animate);
         time += 0.016;
 
-        // Smooth lerp rotation
         robot.rotation.y += (targetRotY - robot.rotation.y) * 0.06;
         robot.rotation.x += (targetRotX - robot.rotation.x) * 0.06;
 
-        // Breathing float
-        robot.position.y = 0.2 + Math.sin(time * 1.2) * 0.1;
+        robot.position.y = 0.35 + Math.sin(time * 1.0) * 0.06;
 
-        // Eye + core glow pulsation
-        const pulse = 0.5 + Math.sin(time * 3.0) * 0.5;
-        const r = 0.0;
-        const g = pulse * 0.94 + 0.06;
-        const b = pulse * 1.0;
-        glowMat.color.setRGB(r, g, b);
-        coreLight.intensity = 1.0 + pulse * 2.0;
-
-        // Particle drift
         const posArr = particleGeo.attributes.position.array;
         for (let i = 0; i < particleCount * 3; i += 3) {
           const idx = i / 3;
