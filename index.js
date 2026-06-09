@@ -172,7 +172,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
       // Camera — Low FOV for cinematic close-up feel (Genesis-style)
       const camera = new THREE.PerspectiveCamera(25, w / h, 0.1, 200);
-      camera.position.set(0, 0.2, 4.5);
+      camera.position.set(0, 0.2, 5.0);
 
       // Renderer — ACES Filmic tone mapping for HDR-like depth & contrast
       const renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true });
@@ -180,7 +180,7 @@ document.addEventListener('DOMContentLoaded', () => {
       renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
       renderer.setClearColor(0x000000, 0);
       renderer.toneMapping = THREE.ACESFilmicToneMapping;
-      renderer.toneMappingExposure = 1.3;
+      renderer.toneMappingExposure = 1.1;
       renderer.outputColorSpace = THREE.SRGBColorSpace;
       container.appendChild(renderer.domElement);
       console.log('[Avabot3D] Renderer created and appended (ACES Filmic)');
@@ -231,8 +231,8 @@ document.addEventListener('DOMContentLoaded', () => {
         'path': 'splat.splat',
         'splatAlphaRemovalThreshold': 5,
         'rotation': rotationArray,
-        'scale': [6.5, 6.5, 6.5],
-        'position': [0, -1.5, 0]
+        'scale': [4.2, 4.2, 4.2],
+        'position': [0, -1.1, 0]
       }]).then(() => {
         console.log('[Avabot3D] Splat loaded successfully');
         const loader = document.getElementById('splat-loading');
