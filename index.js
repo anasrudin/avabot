@@ -161,30 +161,52 @@ document.addEventListener('DOMContentLoaded', () => {
       let w = container.clientWidth;
       let h = container.clientHeight;
       if (w === 0 || h === 0) {
-        w = Math.min(window.innerHeight * 0.8, 680);
-        h = w;
-        console.warn('[Avabot3D] Container had 0 dimensions, using fallback:', w, h);
+        w = window.innerWidth;
+        h = window.innerHeight;
+        console.warn('[Avabot3D] Container had 0 dimensions, using window fallback:', w, h);
       }
       console.log('[Avabot3D] Canvas dimensions:', w, 'x', h);
 
       // Scene
       const scene = new THREE.Scene();
 
-      // Camera
-      const camera = new THREE.PerspectiveCamera(40, w / h, 0.1, 100);
-      camera.position.set(0, 0, 5.8);
+      // Camera — Low FOV for cinematic close-up feel (Genesis-style)
+      const camera = new THREE.PerspectiveCamera(25, w / h, 0.1, 200);
+      camera.position.set(0, 0.2, 4.5);
 
-      // Renderer
+      // Renderer — ACES Filmic tone mapping for HDR-like depth & contrast
       const renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true });
       renderer.setSize(w, h);
       renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
       renderer.setClearColor(0x000000, 0);
+      renderer.toneMapping = THREE.ACESFilmicToneMapping;
+      renderer.toneMappingExposure = 1.3;
+      renderer.outputColorSpace = THREE.SRGBColorSpace;
       container.appendChild(renderer.domElement);
-      console.log('[Avabot3D] Renderer created and appended');
+      console.log('[Avabot3D] Renderer created and appended (ACES Filmic)');
+
+      // ---- Subtle ambient + directional lighting for splat scene ----
+      const ambientLight = new THREE.AmbientLight(0xffffff, 0.3);
+      scene.add(ambientLight);
+
+      // Key light — from upper-right for dramatic highlight
+      const keyLight = new THREE.DirectionalLight(0xffffff, 1.2);
+      keyLight.position.set(3, 4, 5);
+      scene.add(keyLight);
+
+      // Rim light — from behind-left for edge definition
+      const rimLight = new THREE.DirectionalLight(0x8899ff, 0.8);
+      rimLight.position.set(-3, 2, -4);
+      scene.add(rimLight);
+
+      // Fill light — subtle from below for soft shadows
+      const fillLight = new THREE.DirectionalLight(0x4466aa, 0.4);
+      fillLight.position.set(0, -3, 2);
+      scene.add(fillLight);
 
       // ---- Parent Pivot Group (for interactive animations) ----
       const pivotGroup = new THREE.Group();
-      pivotGroup.position.set(0, 0.35, 0);
+      pivotGroup.position.set(0, 0.0, 0);
       scene.add(pivotGroup);
 
       // ---- Gaussian Splat DropInViewer ----
@@ -204,13 +226,13 @@ document.addEventListener('DOMContentLoaded', () => {
       quaternion.setFromEuler(euler);
       const rotationArray = [quaternion.x, quaternion.y, quaternion.z, quaternion.w];
 
-      // Load the splat scene
+      // Load the splat scene — large scale to fill 70-80% of viewport
       viewer.addSplatScenes([{
         'path': 'splat.splat',
         'splatAlphaRemovalThreshold': 5,
         'rotation': rotationArray,
-        'scale': [3.8, 3.8, 3.8],
-        'position': [0, -1.1, 0] // Shifted down further to fit the larger scale without cutting off head/feet
+        'scale': [6.5, 6.5, 6.5],
+        'position': [0, -1.5, 0]
       }]).then(() => {
         console.log('[Avabot3D] Splat loaded successfully');
         const loader = document.getElementById('splat-loading');
@@ -269,8 +291,8 @@ document.addEventListener('DOMContentLoaded', () => {
       document.addEventListener('mousemove', (e) => {
         const mx = (e.clientX / window.innerWidth) - 0.5;
         const my = (e.clientY / window.innerHeight) - 0.5;
-        targetRotY = mx * 0.6;
-        targetRotX = my * 0.3;
+        targetRotY = mx * 0.35;
+        targetRotX = my * 0.15;
       });
 
       // ===== ANIMATION LOOP =====
@@ -280,12 +302,12 @@ document.addEventListener('DOMContentLoaded', () => {
         requestAnimationFrame(animate);
         time += 0.016;
 
-        // Rotate pivotGroup according to mouse
-        pivotGroup.rotation.y += (targetRotY - pivotGroup.rotation.y) * 0.06;
-        pivotGroup.rotation.x += (targetRotX - pivotGroup.rotation.x) * 0.06;
+        // Rotate pivotGroup according to mouse — smooth lerp
+        pivotGroup.rotation.y += (targetRotY - pivotGroup.rotation.y) * 0.04;
+        pivotGroup.rotation.x += (targetRotX - pivotGroup.rotation.x) * 0.04;
 
-        // Floating animation
-        pivotGroup.position.y = 0.35 + Math.sin(time * 1.0) * 0.06;
+        // Floating animation — very subtle for premium feel
+        pivotGroup.position.y = Math.sin(time * 0.8) * 0.04;
 
         // Drift particles
         const posArr = particleGeo.attributes.position.array;
