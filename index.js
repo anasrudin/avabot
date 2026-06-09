@@ -198,9 +198,9 @@ document.addEventListener('DOMContentLoaded', () => {
       viewer.position.set(0, 0, 0);
       pivotGroup.add(viewer);
 
-      // Compute correct rotation quaternion natively (X: 180 degrees, Y: 90 degrees to face front)
+      // Compute correct rotation quaternion natively (X: 180 degrees, Y: -90 degrees to face front)
       const quaternion = new THREE.Quaternion();
-      const euler = new THREE.Euler(Math.PI, Math.PI / 2, 0, 'YXZ');
+      const euler = new THREE.Euler(Math.PI, -Math.PI / 2, 0, 'YXZ');
       quaternion.setFromEuler(euler);
       const rotationArray = [quaternion.x, quaternion.y, quaternion.z, quaternion.w];
 
