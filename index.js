@@ -172,7 +172,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
       // Camera
       const camera = new THREE.PerspectiveCamera(40, w / h, 0.1, 100);
-      camera.position.set(0, 0, 5);
+      camera.position.set(0, 0, 6.5);
 
       // Renderer
       const renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true });
@@ -198,13 +198,19 @@ document.addEventListener('DOMContentLoaded', () => {
       viewer.position.set(0, 0, 0);
       pivotGroup.add(viewer);
 
+      // Compute correct rotation quaternion natively (X: 180 degrees, Y: 90 degrees to face front)
+      const quaternion = new THREE.Quaternion();
+      const euler = new THREE.Euler(Math.PI, Math.PI / 2, 0, 'YXZ');
+      quaternion.setFromEuler(euler);
+      const rotationArray = [quaternion.x, quaternion.y, quaternion.z, quaternion.w];
+
       // Load the splat scene
       viewer.addSplatScenes([{
         'path': 'splat.splat',
         'splatAlphaRemovalThreshold': 5,
-        'rotation': [1, 0, 0, 0], // Flip 180 degrees around X-axis natively (quaternion [x,y,z,w])
-        'scale': [4.8, 4.8, 4.8],  // Scale natively for CPU/Worker sorting compatibility
-        'position': [0, 0, 0]
+        'rotation': rotationArray,
+        'scale': [2.8, 2.8, 2.8],
+        'position': [0, -0.8, 0] // Shifted down slightly to fit the container without cutting off head/feet
       }]).then(() => {
         console.log('[Avabot3D] Splat loaded successfully');
         const loader = document.getElementById('splat-loading');
