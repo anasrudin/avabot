@@ -194,19 +194,17 @@ document.addEventListener('DOMContentLoaded', () => {
         'sharedMemoryForWorkers': false
       });
 
-      // Align and scale the splat scan inside the pivot group
-      // Rotate 180 degrees (Math.PI) around Z-axis to stand right side up
-      viewer.rotation.z = Math.PI;
-      // Scale up significantly so it serves as a prominent centerpiece
-      viewer.scale.set(4.8, 4.8, 4.8);
+      // Align the viewer inside the pivot group
       viewer.position.set(0, 0, 0);
-
       pivotGroup.add(viewer);
 
       // Load the splat scene
       viewer.addSplatScenes([{
         'path': 'splat.splat',
-        'splatAlphaRemovalThreshold': 5
+        'splatAlphaRemovalThreshold': 5,
+        'rotation': [1, 0, 0, 0], // Flip 180 degrees around X-axis natively (quaternion [x,y,z,w])
+        'scale': [4.8, 4.8, 4.8],  // Scale natively for CPU/Worker sorting compatibility
+        'position': [0, 0, 0]
       }]).then(() => {
         console.log('[Avabot3D] Splat loaded successfully');
         const loader = document.getElementById('splat-loading');
