@@ -185,7 +185,8 @@ document.addEventListener('DOMContentLoaded', () => {
       // ---- Gaussian Splat DropInViewer ----
       const viewer = new GaussianSplats3D.DropInViewer({
         'gpuAcceleratedSort': false,
-        'selfDrivenMode': true
+        'selfDrivenMode': true,
+        'sharedMemoryForWorkers': false
       });
 
       // Position the viewer nicely in the scene
