@@ -14,8 +14,14 @@
   <!-- CSS Stylesheet -->
   <link rel="stylesheet" href="index.css">
   
-  <!-- Three.js CDN -->
-  <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+  <!-- Three.js CDN and ES Module Splat Library -->
+  <script type="importmap">
+    {
+      "imports": {
+        "three": "https://cdn.jsdelivr.net/npm/three@0.166.1/build/three.module.js"
+      }
+    }
+  </script>
 </head>
 <body>
 
@@ -60,6 +66,12 @@
       <div class="centerpiece-wrapper" id="centerpiece-wrapper">
         <div class="centerpiece-glow"></div>
         <div id="canvas3d-container" class="canvas-3d-container"></div>
+        
+        <!-- Premium Loading Screen for Gaussian Splat -->
+        <div id="splat-loading" class="splat-loading-overlay">
+          <div class="loader-spinner"></div>
+          <span class="loader-text">Loading Autonomy...</span>
+        </div>
       </div>
 
       <!-- Bottom Panel (Left and Right Columns) -->
@@ -255,7 +267,7 @@
     </div>
   </div>
 
-  <!-- JavaScript Bundle -->
-  <script src="index.js"></script>
+  <!-- JavaScript Bundle (as ES module) -->
+  <script type="module" src="index.js"></script>
 </body>
 </html>
