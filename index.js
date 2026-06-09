@@ -319,15 +319,16 @@ document.addEventListener('DOMContentLoaded', () => {
       }
 
       micBtn?.addEventListener('click', async () => {
+        // If already listening, stop it.
+        if (isListening) {
+          if (recognition) recognition.stop();
+          return;
+        }
+
+        // Cancel any ongoing speech so it doesn't transcribe the bot's own voice
         if (isSpeaking) {
           window.speechSynthesis.cancel();
           isSpeaking = false;
-        }
-
-        // Test TTS on first click
-        if (!hasGreeted && 'speechSynthesis' in window) {
-          hasGreeted = true;
-          speakResponse("Audio system initialized. I am ready.");
         }
 
         const audioReady = await setupAudioContext();
@@ -335,12 +336,12 @@ document.addEventListener('DOMContentLoaded', () => {
           audioContext.resume();
         }
         
-        if (audioReady && recognition && !isListening && !isSpeaking) {
+        if (audioReady && recognition) {
           try {
             recognition.start();
           } catch (e) {
             console.error("Recognition start failed", e);
-            transcriptionText.textContent = "Failed to start recognition. Please refresh.";
+            if (transcriptionText) transcriptionText.textContent = "Failed to start recognition. Please try clicking again.";
           }
         }
       });
