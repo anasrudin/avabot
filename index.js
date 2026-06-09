@@ -209,7 +209,7 @@ document.addEventListener('DOMContentLoaded', () => {
       scene.add(pivotGroup);
 
       // ---- AI Blob Particle System ----
-      const blobGeo = new THREE.SphereGeometry(1.5, 64, 64);
+      const blobGeo = new THREE.SphereGeometry(0.8, 64, 64);
       
       // Store original vertices for animation
       const originalPositions = new Float32Array(blobGeo.attributes.position.array);
@@ -243,6 +243,7 @@ document.addEventListener('DOMContentLoaded', () => {
       let targetVolume = 0;
       let isListening = false;
       let isSpeaking = false;
+      let hasGreeted = false;
 
       const micBtn = document.getElementById('mic-btn');
       const transcriptionText = document.getElementById('transcription-text');
@@ -257,7 +258,7 @@ document.addEventListener('DOMContentLoaded', () => {
         recognition.onstart = () => {
           isListening = true;
           micBtn.classList.add('listening');
-          transcriptionText.textContent = "Listening...";
+          transcriptionText.textContent = "Listening... (Please speak)";
         };
 
         recognition.onresult = (event) => {
@@ -276,6 +277,13 @@ document.addEventListener('DOMContentLoaded', () => {
           }
         };
 
+        recognition.onerror = (event) => {
+          console.error('[AvabotVoice] Speech Recognition Error:', event.error);
+          transcriptionText.textContent = `Mic Error: ${event.error}. Please check permissions.`;
+          isListening = false;
+          micBtn.classList.remove('listening');
+        };
+
         recognition.onspeechend = () => {
           recognition.stop();
         };
@@ -285,12 +293,13 @@ document.addEventListener('DOMContentLoaded', () => {
           micBtn.classList.remove('listening');
         };
       } else {
-        if (transcriptionText) transcriptionText.textContent = "Speech Recognition not supported in this browser.";
+        if (transcriptionText) transcriptionText.textContent = "Speech Recognition not supported in this browser. Try Chrome.";
       }
 
       async function setupAudioContext() {
         if (!audioContext) {
           try {
+            if (transcriptionText) transcriptionText.textContent = "Requesting microphone access...";
             const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
             audioContext = new (window.AudioContext || window.webkitAudioContext)();
             analyser = audioContext.createAnalyser();
@@ -298,11 +307,15 @@ document.addEventListener('DOMContentLoaded', () => {
             source.connect(analyser);
             analyser.fftSize = 256;
             dataArray = new Uint8Array(analyser.frequencyBinCount);
+            if (transcriptionText) transcriptionText.textContent = "Microphone connected.";
+            return true;
           } catch (err) {
             console.error('[AvabotVoice] Error accessing microphone:', err);
-            if (transcriptionText) transcriptionText.textContent = "Microphone access denied.";
+            if (transcriptionText) transcriptionText.textContent = "Microphone access denied or unavailable.";
+            return false;
           }
         }
+        return true;
       }
 
       micBtn?.addEventListener('click', async () => {
@@ -310,12 +323,25 @@ document.addEventListener('DOMContentLoaded', () => {
           window.speechSynthesis.cancel();
           isSpeaking = false;
         }
-        await setupAudioContext();
-        if (audioContext && audioContext.state === 'suspended') {
+
+        // Test TTS on first click
+        if (!hasGreeted && 'speechSynthesis' in window) {
+          hasGreeted = true;
+          speakResponse("Audio system initialized. I am ready.");
+        }
+
+        const audioReady = await setupAudioContext();
+        if (audioReady && audioContext && audioContext.state === 'suspended') {
           audioContext.resume();
         }
-        if (recognition && !isListening) {
-          recognition.start();
+        
+        if (audioReady && recognition && !isListening && !isSpeaking) {
+          try {
+            recognition.start();
+          } catch (e) {
+            console.error("Recognition start failed", e);
+            transcriptionText.textContent = "Failed to start recognition. Please refresh.";
+          }
         }
       });
 
