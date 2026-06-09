@@ -182,6 +182,11 @@ document.addEventListener('DOMContentLoaded', () => {
       container.appendChild(renderer.domElement);
       console.log('[Avabot3D] Renderer created and appended');
 
+      // ---- Parent Pivot Group (for interactive animations) ----
+      const pivotGroup = new THREE.Group();
+      pivotGroup.position.set(0, 0.35, 0);
+      scene.add(pivotGroup);
+
       // ---- Gaussian Splat DropInViewer ----
       const viewer = new GaussianSplats3D.DropInViewer({
         'gpuAcceleratedSort': false,
@@ -189,10 +194,14 @@ document.addEventListener('DOMContentLoaded', () => {
         'sharedMemoryForWorkers': false
       });
 
-      // Position the viewer nicely in the scene
-      viewer.position.set(0, 0.35, 0);
-      viewer.scale.set(1.1, 1.1, 1.1);
-      scene.add(viewer);
+      // Align and scale the splat scan inside the pivot group
+      // Rotate 180 degrees (Math.PI) around Z-axis to stand right side up
+      viewer.rotation.z = Math.PI;
+      // Scale up significantly so it serves as a prominent centerpiece
+      viewer.scale.set(4.8, 4.8, 4.8);
+      viewer.position.set(0, 0, 0);
+
+      pivotGroup.add(viewer);
 
       // Load the splat scene
       viewer.addSplatScenes([{
@@ -267,12 +276,12 @@ document.addEventListener('DOMContentLoaded', () => {
         requestAnimationFrame(animate);
         time += 0.016;
 
-        // Rotate viewer according to mouse
-        viewer.rotation.y += (targetRotY - viewer.rotation.y) * 0.06;
-        viewer.rotation.x += (targetRotX - viewer.rotation.x) * 0.06;
+        // Rotate pivotGroup according to mouse
+        pivotGroup.rotation.y += (targetRotY - pivotGroup.rotation.y) * 0.06;
+        pivotGroup.rotation.x += (targetRotX - pivotGroup.rotation.x) * 0.06;
 
         // Floating animation
-        viewer.position.y = 0.35 + Math.sin(time * 1.0) * 0.06;
+        pivotGroup.position.y = 0.35 + Math.sin(time * 1.0) * 0.06;
 
         // Drift particles
         const posArr = particleGeo.attributes.position.array;
