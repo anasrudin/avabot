@@ -252,7 +252,7 @@ document.addEventListener('DOMContentLoaded', () => {
       let recognition;
       if (SpeechRecognition) {
         recognition = new SpeechRecognition();
-        recognition.continuous = false;
+        recognition.continuous = true; // Keep listening even after short pauses
         recognition.interimResults = true;
 
         recognition.onstart = () => {
@@ -278,14 +278,18 @@ document.addEventListener('DOMContentLoaded', () => {
         };
 
         recognition.onerror = (event) => {
-          console.error('[AvabotVoice] Speech Recognition Error:', event.error);
-          transcriptionText.textContent = `Mic Error: ${event.error}. Please check permissions.`;
+          console.warn('[AvabotVoice] Speech Recognition Error:', event.error);
+          if (event.error === 'no-speech') {
+            transcriptionText.textContent = "No speech detected. Click mic to try again.";
+          } else {
+            transcriptionText.textContent = `Mic Error: ${event.error}. Please check permissions.`;
+          }
           isListening = false;
           micBtn.classList.remove('listening');
         };
 
         recognition.onspeechend = () => {
-          recognition.stop();
+          // with continuous = true, we let the user control when to stop
         };
 
         recognition.onend = () => {
