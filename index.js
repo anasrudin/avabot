@@ -172,7 +172,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
       // Camera
       const camera = new THREE.PerspectiveCamera(40, w / h, 0.1, 100);
-      camera.position.set(0, 0, 6.5);
+      camera.position.set(0, 0, 5.8);
 
       // Renderer
       const renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true });
@@ -209,8 +209,8 @@ document.addEventListener('DOMContentLoaded', () => {
         'path': 'splat.splat',
         'splatAlphaRemovalThreshold': 5,
         'rotation': rotationArray,
-        'scale': [2.8, 2.8, 2.8],
-        'position': [0, -0.8, 0] // Shifted down slightly to fit the container without cutting off head/feet
+        'scale': [3.8, 3.8, 3.8],
+        'position': [0, -1.1, 0] // Shifted down further to fit the larger scale without cutting off head/feet
       }]).then(() => {
         console.log('[Avabot3D] Splat loaded successfully');
         const loader = document.getElementById('splat-loading');
