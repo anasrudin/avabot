@@ -1,5 +1,4 @@
 import * as THREE from 'three';
-import * as GaussianSplats3D from 'https://cdn.jsdelivr.net/npm/@mkkellogg/gaussian-splats-3d@0.4.7/build/gaussian-splats-3d.module.js';
 
 document.addEventListener('DOMContentLoaded', () => {
   // ==================== DIAGNOSTIC MODAL LOGIC ====================
@@ -209,39 +208,157 @@ document.addEventListener('DOMContentLoaded', () => {
       pivotGroup.position.set(0, 0.0, 0);
       scene.add(pivotGroup);
 
-      // ---- Gaussian Splat DropInViewer ----
-      const viewer = new GaussianSplats3D.DropInViewer({
-        'gpuAcceleratedSort': false,
-        'selfDrivenMode': true,
-        'sharedMemoryForWorkers': false
+      // ---- AI Blob Particle System ----
+      const blobGeo = new THREE.SphereGeometry(1.5, 64, 64);
+      
+      // Store original vertices for animation
+      const originalPositions = new Float32Array(blobGeo.attributes.position.array);
+      blobGeo.setAttribute('originalPosition', new THREE.BufferAttribute(originalPositions, 3));
+      
+      const blobCanvas = document.createElement('canvas');
+      blobCanvas.width = 32; blobCanvas.height = 32;
+      const bCtx = blobCanvas.getContext('2d');
+      const bGrad = bCtx.createRadialGradient(16, 16, 0, 16, 16, 16);
+      bGrad.addColorStop(0, 'rgba(0, 240, 255, 1)');
+      bGrad.addColorStop(0.3, 'rgba(0, 136, 255, 0.8)');
+      bGrad.addColorStop(1, 'rgba(0, 0, 0, 0)');
+      bCtx.fillStyle = bGrad;
+      bCtx.fillRect(0, 0, 32, 32);
+
+      const blobMat = new THREE.PointsMaterial({
+        size: 0.05,
+        map: new THREE.CanvasTexture(blobCanvas),
+        transparent: true,
+        opacity: 0.9,
+        blending: THREE.AdditiveBlending,
+        depthWrite: false
       });
 
-      // Align the viewer inside the pivot group
-      viewer.position.set(0, 0, 0);
-      pivotGroup.add(viewer);
+      const blob = new THREE.Points(blobGeo, blobMat);
+      pivotGroup.add(blob);
 
-      // Compute correct rotation quaternion natively (X: 180 degrees, Y: -90 degrees to face front)
-      const quaternion = new THREE.Quaternion();
-      const euler = new THREE.Euler(Math.PI, -Math.PI / 2, 0, 'YXZ');
-      quaternion.setFromEuler(euler);
-      const rotationArray = [quaternion.x, quaternion.y, quaternion.z, quaternion.w];
+      // ---- Audio & Speech Recognition Setup ----
+      let audioContext, analyser, dataArray;
+      let currentVolume = 0;
+      let targetVolume = 0;
+      let isListening = false;
+      let isSpeaking = false;
 
-      // Load the splat scene — large scale to fill 70-80% of viewport
-      viewer.addSplatScenes([{
-        'path': 'splat.splat',
-        'splatAlphaRemovalThreshold': 5,
-        'rotation': rotationArray,
-        'scale': [4.2, 4.2, 4.2],
-        'position': [0, -1.1, 0]
-      }]).then(() => {
-        console.log('[Avabot3D] Splat loaded successfully');
-        const loader = document.getElementById('splat-loading');
-        if (loader) {
-          loader.classList.add('fade-out');
+      const micBtn = document.getElementById('mic-btn');
+      const transcriptionText = document.getElementById('transcription-text');
+
+      const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+      let recognition;
+      if (SpeechRecognition) {
+        recognition = new SpeechRecognition();
+        recognition.continuous = false;
+        recognition.interimResults = true;
+
+        recognition.onstart = () => {
+          isListening = true;
+          micBtn.classList.add('listening');
+          transcriptionText.textContent = "Listening...";
+        };
+
+        recognition.onresult = (event) => {
+          let interimTranscript = '';
+          let finalTranscript = '';
+          for (let i = event.resultIndex; i < event.results.length; ++i) {
+            if (event.results[i].isFinal) {
+              finalTranscript += event.results[i][0].transcript;
+            } else {
+              interimTranscript += event.results[i][0].transcript;
+            }
+          }
+          transcriptionText.textContent = finalTranscript || interimTranscript;
+          if (finalTranscript) {
+            handleVoiceCommand(finalTranscript);
+          }
+        };
+
+        recognition.onspeechend = () => {
+          recognition.stop();
+        };
+
+        recognition.onend = () => {
+          isListening = false;
+          micBtn.classList.remove('listening');
+        };
+      } else {
+        if (transcriptionText) transcriptionText.textContent = "Speech Recognition not supported in this browser.";
+      }
+
+      async function setupAudioContext() {
+        if (!audioContext) {
+          try {
+            const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+            audioContext = new (window.AudioContext || window.webkitAudioContext)();
+            analyser = audioContext.createAnalyser();
+            const source = audioContext.createMediaStreamSource(stream);
+            source.connect(analyser);
+            analyser.fftSize = 256;
+            dataArray = new Uint8Array(analyser.frequencyBinCount);
+          } catch (err) {
+            console.error('[AvabotVoice] Error accessing microphone:', err);
+            if (transcriptionText) transcriptionText.textContent = "Microphone access denied.";
+          }
         }
-      }).catch((err) => {
-        console.error('[Avabot3D] Error loading splat:', err);
+      }
+
+      micBtn?.addEventListener('click', async () => {
+        if (isSpeaking) {
+          window.speechSynthesis.cancel();
+          isSpeaking = false;
+        }
+        await setupAudioContext();
+        if (audioContext && audioContext.state === 'suspended') {
+          audioContext.resume();
+        }
+        if (recognition && !isListening) {
+          recognition.start();
+        }
       });
+
+      function handleVoiceCommand(text) {
+        const lowerText = text.toLowerCase();
+        let response = "I'm processing your request. My neural networks are analyzing the patterns.";
+        
+        if (lowerText.includes('hello') || lowerText.includes('hi') || lowerText.includes('halo')) {
+          response = "Hello! I am Avabot, your autonomous orchestrator.";
+        } else if (lowerText.includes('status') || lowerText.includes('level') || lowerText.includes('kondisi')) {
+          response = "System diagnostics are nominal. Cognitive layers are fully operational.";
+        } else if (lowerText.includes('what can you do') || lowerText.includes('apa yang bisa')) {
+          response = "I can design, deploy, and scale autonomous agents. Just tell me your objective.";
+        }
+
+        setTimeout(() => {
+          speakResponse(response);
+        }, 500);
+      }
+
+      function speakResponse(text) {
+        if ('speechSynthesis' in window) {
+          if (transcriptionText) transcriptionText.textContent = text;
+          const utterance = new SpeechSynthesisUtterance(text);
+          utterance.rate = 1.0;
+          utterance.pitch = 0.9;
+          
+          utterance.onstart = () => {
+            isSpeaking = true;
+          };
+          
+          utterance.onend = () => {
+            isSpeaking = false;
+            setTimeout(() => {
+              if (transcriptionText && transcriptionText.textContent === text) {
+                transcriptionText.textContent = "";
+              }
+            }, 3000);
+          };
+          
+          window.speechSynthesis.speak(utterance);
+        }
+      }
 
       // ===== BACKGROUND PARTICLES =====
       const particleCount = 200;
@@ -309,11 +426,57 @@ document.addEventListener('DOMContentLoaded', () => {
         // Floating animation — very subtle for premium feel
         pivotGroup.position.y = Math.sin(time * 0.8) * 0.04;
 
-        // Drift particles
+        // Audio processing
+        if (analyser && isListening) {
+          analyser.getByteFrequencyData(dataArray);
+          let sum = 0;
+          for (let i = 0; i < dataArray.length; i++) {
+            sum += dataArray[i];
+          }
+          let avg = sum / dataArray.length;
+          targetVolume = avg / 255.0; 
+        } else if (isSpeaking) {
+          // Simulate volume modulation while speaking since we can't easily hook into speechSynthesis audio stream
+          targetVolume = 0.2 + Math.sin(time * 20.0) * 0.15 + Math.random() * 0.1;
+        } else {
+          targetVolume = 0.02; // Base resting volume/breathing
+        }
+
+        currentVolume += (targetVolume - currentVolume) * 0.1;
+
+        // Blob organic animation
+        const positions = blobGeo.attributes.position.array;
+        const origPositions = blobGeo.attributes.originalPosition.array;
+        for (let i = 0; i < positions.length; i += 3) {
+          const x = origPositions[i];
+          const y = origPositions[i+1];
+          const z = origPositions[i+2];
+          
+          // Math sine wave noise
+          const noise = Math.sin(x * 2.0 + time * 2.0) * Math.cos(y * 2.0 + time * 1.5) * Math.sin(z * 2.0 + time * 1.8);
+          // Scale amplitude by volume (minimum 0.05 amplitude)
+          const amplitude = 0.05 + currentVolume * 0.5;
+          
+          const normalizedLen = Math.sqrt(x*x + y*y + z*z);
+          const nx = x / normalizedLen;
+          const ny = y / normalizedLen;
+          const nz = z / normalizedLen;
+
+          positions[i] = origPositions[i] + nx * noise * amplitude;
+          positions[i+1] = origPositions[i+1] + ny * noise * amplitude;
+          positions[i+2] = origPositions[i+2] + nz * noise * amplitude;
+        }
+        blobGeo.attributes.position.needsUpdate = true;
+        
+        // Rotate blob slowly
+        blob.rotation.y += 0.002 + currentVolume * 0.02;
+        blob.rotation.x += 0.001 + currentVolume * 0.01;
+
+        // Drift background particles
         const posArr = particleGeo.attributes.position.array;
         for (let i = 0; i < particleCount * 3; i += 3) {
           const idx = i / 3;
-          posArr[i]     += pSpeeds[idx].x;
+          posArr[i]     += pSpeeds[idx].x + (currentVolume * 0.02);
           posArr[i + 1] += pSpeeds[idx].y;
           posArr[i + 2] += pSpeeds[idx].z;
           if (Math.abs(posArr[i]) > 7) posArr[i] = (Math.random() - 0.5) * 14;
